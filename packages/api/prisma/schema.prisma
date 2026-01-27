@@ -19,6 +19,7 @@ model Customer {
 
   invoices         Invoice[]
   timesheetEntries TimesheetEntry[]
+  charges          Charge[]
   importBatches    ImportBatch[]
 
   @@map("customers")
@@ -43,11 +44,35 @@ model Invoice {
 
   customer Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
   entries  TimesheetEntry[]
+  charges  Charge[]
   emails   EmailLog[]
 
   @@index([customerId])
   @@index([status])
   @@map("invoices")
+}
+
+model Charge {
+  id          String     @id @default(uuid())
+  invoiceId   String?
+  customerId  String
+  chargeType  ChargeType
+  description String     @db.Text
+  quantity    Decimal    @default(1) @db.Decimal(10, 2)
+  unitPrice   Decimal    @db.Decimal(10, 2)
+  total       Decimal    @db.Decimal(10, 2)
+  chargeDate  DateTime   @db.Date
+  notes       String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  invoice  Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+  @@index([invoiceId])
+  @@index([chargeDate])
+  @@map("charges")
 }
 
 model TimesheetEntry {
@@ -126,4 +151,13 @@ enum EmailStatus {
   sent
   failed
   bounced
+}
+
+enum ChargeType {
+  service        // Monthly/recurring service fees
+  software       // Software licenses
+  hardware       // Physical items/hardware
+  consulting     // One-time consulting fees
+  expense        // Reimbursable expenses
+  other          // Miscellaneous charges
 }

@@ -164,7 +164,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
     // === LINE ITEMS TABLE ===
     const tableTop = 220;
     const rowHeight = 22;
-    const colWidths = { date: 65, description: 300, duration: 60, amount: 65 };
+    const colWidths = { date: 65, description: 300, qty: 60, amount: 65 };
     const maxContentY = letterHeight - 120; // Leave room for footer on last page
     const continuationTableTop = 50; // Where table starts on continuation pages
 
@@ -177,8 +177,8 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
       xPos += colWidths.date;
       doc.text('DESCRIPTION', xPos, y + 9);
       xPos += colWidths.description;
-      doc.text('TIME', xPos, y + 9, { width: colWidths.duration, align: 'right' });
-      xPos += colWidths.duration;
+      doc.text('QTY', xPos, y + 9, { width: colWidths.qty, align: 'right' });
+      xPos += colWidths.qty;
       doc.text('AMOUNT', xPos, y + 9, { width: colWidths.amount, align: 'right' });
       return y + 32; // Return Y position for first row
     };
@@ -186,7 +186,9 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
     // Draw first page table header
     let rowY = drawTableHeader(tableTop);
     doc.font('Orbitron-Medium').fontSize(9);
+    let rowIndex = 0;
 
+    // Render time entries
     for (let i = 0; i < invoice.entries.length; i++) {
       // Check if we need a new page before drawing this row
       if (rowY + rowHeight > maxContentY) {
@@ -203,7 +205,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
       const amount = calculateCost(entry.totalMinutes, effectiveRate);
 
       // Alternate row background
-      if (i % 2 === 0) {
+      if (rowIndex % 2 === 0) {
         doc.rect(leftMargin, rowY - 4, pageWidth, rowHeight).fill(THEME.tableRowAlt);
       }
 
@@ -220,10 +222,10 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
 
       doc.fillColor(THEME.textMuted);
       doc.text(formatDuration(entry.totalMinutes), xPos, rowY + 2, {
-        width: colWidths.duration,
+        width: colWidths.qty,
         align: 'right'
       });
-      xPos += colWidths.duration;
+      xPos += colWidths.qty;
 
       doc.fillColor(THEME.neonCyan).font('Orbitron-Bold');
       doc.text(formatCurrency(amount), xPos, rowY + 2, {
@@ -233,6 +235,57 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
       doc.font('Orbitron-Medium');
 
       rowY += rowHeight;
+      rowIndex++;
+    }
+
+    // Render charges (if any)
+    const charges = (invoice as { charges?: Array<{ chargeDate: Date; description: string; quantity: number; total: number; chargeType: string }> }).charges || [];
+    for (let i = 0; i < charges.length; i++) {
+      // Check if we need a new page before drawing this row
+      if (rowY + rowHeight > maxContentY) {
+        addNewPage();
+        doc.font('Orbitron-Medium').fontSize(8).fillColor(THEME.textMuted);
+        doc.text(`${invoice.invoiceNumber} - Continued`, leftMargin, 25);
+        rowY = drawTableHeader(continuationTableTop);
+        doc.font('Orbitron-Medium').fontSize(9);
+      }
+
+      const charge = charges[i];
+
+      // Alternate row background
+      if (rowIndex % 2 === 0) {
+        doc.rect(leftMargin, rowY - 4, pageWidth, rowHeight).fill(THEME.tableRowAlt);
+      }
+
+      let xPos = leftMargin + 10;
+      doc.fillColor(THEME.textLight);
+      doc.text(formatShortDate(charge.chargeDate), xPos, rowY + 2);
+      xPos += colWidths.date;
+
+      // Description with charge type indicator - truncate if needed
+      let desc = charge.description;
+      if (desc.length > 55) desc = desc.substring(0, 52) + '...';
+      doc.text(desc, xPos, rowY + 2, { width: colWidths.description - 5 });
+      xPos += colWidths.description;
+
+      // Quantity for charges
+      doc.fillColor(THEME.textMuted);
+      const qtyStr = charge.quantity === 1 ? '1' : charge.quantity.toString();
+      doc.text(qtyStr, xPos, rowY + 2, {
+        width: colWidths.qty,
+        align: 'right'
+      });
+      xPos += colWidths.qty;
+
+      doc.fillColor(THEME.neonCyan).font('Orbitron-Bold');
+      doc.text(formatCurrency(charge.total), xPos, rowY + 2, {
+        width: colWidths.amount,
+        align: 'right'
+      });
+      doc.font('Orbitron-Medium');
+
+      rowY += rowHeight;
+      rowIndex++;
     }
 
     // Check if totals section needs a new page

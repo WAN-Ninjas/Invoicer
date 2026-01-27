@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { CustomersPage } from '@/pages/CustomersPage';
 import { EntriesPage } from '@/pages/EntriesPage';
+import { ChargesPage } from '@/pages/ChargesPage';
 import { ImportPage } from '@/pages/ImportPage';
 import { InvoicesPage } from '@/pages/InvoicesPage';
 import { NewInvoicePage } from '@/pages/NewInvoicePage';
@@ -46,6 +47,7 @@ function App() {
           <Route index element={<DashboardPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="entries" element={<EntriesPage />} />
+          <Route path="charges" element={<ChargesPage />} />
           <Route path="import" element={<ImportPage />} />
           <Route path="invoices" element={<InvoicesPage />} />
           <Route path="invoices/new" element={<NewInvoicePage />} />

@@ -85,6 +85,18 @@ export const entriesApi = {
   },
 };
 
+// Charges
+export const chargesApi = {
+  getAll: (params?: Record<string, string>) => api.get('/charges', { params }),
+  getById: (id: string) => api.get(`/charges/${id}`),
+  getTypes: () => api.get('/charges/types'),
+  getUnbilled: (customerId?: string) =>
+    api.get('/charges/unbilled', { params: customerId ? { customerId } : {} }),
+  create: (data: Record<string, unknown>) => api.post('/charges', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/charges/${id}`, data),
+  delete: (id: string) => api.delete(`/charges/${id}`),
+};
+
 // Invoices
 export const invoicesApi = {
   getAll: (params?: Record<string, string>) => api.get('/invoices', { params }),

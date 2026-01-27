@@ -10,13 +10,14 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
-import { customersApi, entriesApi, invoicesApi } from '@/services/api';
-import { formatCurrency, formatDate, formatDuration } from '@invoicer/shared';
-import type { Customer, TimesheetEntry } from '@invoicer/shared';
+import { customersApi, entriesApi, chargesApi, invoicesApi } from '@/services/api';
+import { formatCurrency, formatDate, formatDuration, CHARGE_TYPE_LABELS } from '@invoicer/shared';
+import type { Customer, TimesheetEntry, Charge } from '@invoicer/shared';
 
 export function NewInvoicePage() {
   const [customerId, setCustomerId] = useState('');
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [selectedCharges, setSelectedCharges] = useState<Set<string>>(new Set());
   const [hourlyRateOverride, setHourlyRateOverride] = useState<string>('');
   const [taxRate, setTaxRate] = useState<string>('0');
   const [notes, setNotes] = useState('');
@@ -42,6 +43,16 @@ export function NewInvoicePage() {
     enabled: !!customerId,
   });
 
+  const { data: unbilledCharges } = useQuery<Charge[]>({
+    queryKey: ['charges', 'unbilled', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const response = await chargesApi.getUnbilled(customerId);
+      return response.data;
+    },
+    enabled: !!customerId,
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
       const response = await invoicesApi.create(data);
@@ -50,6 +61,7 @@ export function NewInvoicePage() {
     onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['entries'] });
+      queryClient.invalidateQueries({ queryKey: ['charges'] });
       toast.success('Invoice created');
       navigate(`/invoices/${invoice.id}`);
     },
@@ -64,6 +76,7 @@ export function NewInvoicePage() {
   const handleCustomerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCustomerId(e.target.value);
     setSelectedEntries(new Set());
+    setSelectedCharges(new Set());
   };
 
   const toggleEntry = (entryId: string) => {
@@ -76,24 +89,47 @@ export function NewInvoicePage() {
     setSelectedEntries(newSelected);
   };
 
-  const selectAll = () => {
+  const selectAllEntries = () => {
     if (unbilledEntries) {
       setSelectedEntries(new Set(unbilledEntries.map((e) => e.id)));
     }
   };
 
-  const deselectAll = () => {
+  const deselectAllEntries = () => {
     setSelectedEntries(new Set());
+  };
+
+  const toggleCharge = (chargeId: string) => {
+    const newSelected = new Set(selectedCharges);
+    if (newSelected.has(chargeId)) {
+      newSelected.delete(chargeId);
+    } else {
+      newSelected.add(chargeId);
+    }
+    setSelectedCharges(newSelected);
+  };
+
+  const selectAllCharges = () => {
+    if (unbilledCharges) {
+      setSelectedCharges(new Set(unbilledCharges.map((c) => c.id)));
+    }
+  };
+
+  const deselectAllCharges = () => {
+    setSelectedCharges(new Set());
   };
 
   // Calculate totals
   const selectedEntriesList = unbilledEntries?.filter((e) => selectedEntries.has(e.id)) || [];
+  const selectedChargesList = unbilledCharges?.filter((c) => selectedCharges.has(c.id)) || [];
   const rate = hourlyRateOverride ? parseFloat(hourlyRateOverride) : selectedCustomer?.defaultHourlyRate || 0;
   const totalMinutes = selectedEntriesList.reduce((sum, e) => sum + e.totalMinutes, 0);
-  const subtotal = selectedEntriesList.reduce((sum, e) => {
+  const entriesSubtotal = selectedEntriesList.reduce((sum, e) => {
     const entryRate = e.hourlyRateOverride !== null ? e.hourlyRateOverride : rate;
     return sum + (e.totalMinutes / 60) * entryRate;
   }, 0);
+  const chargesSubtotal = selectedChargesList.reduce((sum, c) => sum + c.total, 0);
+  const subtotal = entriesSubtotal + chargesSubtotal;
   const taxRateNum = parseFloat(taxRate) / 100 || 0;
   const taxAmount = subtotal * taxRateNum;
   const total = subtotal + taxAmount;
@@ -101,14 +137,15 @@ export function NewInvoicePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedEntries.size === 0) {
-      toast.error('Please select at least one entry');
+    if (selectedEntries.size === 0 && selectedCharges.size === 0) {
+      toast.error('Please select at least one entry or charge');
       return;
     }
 
     const data: Record<string, unknown> = {
       customerId,
       entryIds: Array.from(selectedEntries),
+      chargeIds: Array.from(selectedCharges),
       taxRate: taxRateNum,
       notes: notes || undefined,
       dueDate: dueDate || undefined,
@@ -190,14 +227,32 @@ export function NewInvoicePage() {
               <CardContent>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Entries:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Time Entries:</span>
                     <span className="font-medium">{selectedEntries.size}</span>
                   </div>
+                  {selectedEntries.size > 0 && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Total Time:</span>
+                        <span className="font-medium">{formatDuration(totalMinutes)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Time Subtotal:</span>
+                        <span className="font-medium">{formatCurrency(entriesSubtotal)}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Total Time:</span>
-                    <span className="font-medium">{formatDuration(totalMinutes)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Charges:</span>
+                    <span className="font-medium">{selectedCharges.size}</span>
                   </div>
-                  <div className="flex justify-between">
+                  {selectedCharges.size > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Charges Subtotal:</span>
+                      <span className="font-medium">{formatCurrency(chargesSubtotal)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
                     <span className="font-medium">{formatCurrency(subtotal)}</span>
                   </div>
@@ -217,7 +272,7 @@ export function NewInvoicePage() {
                   type="submit"
                   variant="primary"
                   className="w-full mt-4"
-                  disabled={selectedEntries.size === 0}
+                  disabled={selectedEntries.size === 0 && selectedCharges.size === 0}
                   isLoading={createMutation.isPending}
                 >
                   <FileText className="w-4 h-4 mr-2" />
@@ -228,16 +283,16 @@ export function NewInvoicePage() {
           </div>
 
           {/* Entries Selection */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Select Entries</CardTitle>
+                <CardTitle>Select Time Entries</CardTitle>
                 {unbilledEntries && unbilledEntries.length > 0 && (
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={selectAll}>
+                    <Button variant="ghost" size="sm" onClick={selectAllEntries}>
                       Select All
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={deselectAll}>
+                    <Button variant="ghost" size="sm" onClick={deselectAllEntries}>
                       Clear
                     </Button>
                   </div>
@@ -307,6 +362,85 @@ export function NewInvoicePage() {
                 ) : (
                   <div className="text-center py-12 text-gray-500">
                     No unbilled entries for this customer
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Charges Selection */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Select Charges</CardTitle>
+                {unbilledCharges && unbilledCharges.length > 0 && (
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={selectAllCharges}>
+                      Select All
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={deselectAllCharges}>
+                      Clear
+                    </Button>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                {!customerId ? (
+                  <div className="text-center py-12 text-gray-500">
+                    Select a customer to see unbilled charges
+                  </div>
+                ) : unbilledCharges && unbilledCharges.length > 0 ? (
+                  <div className="max-h-[400px] overflow-y-auto scrollbar-thin">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12"></TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Qty</TableHead>
+                          <TableHead>Unit Price</TableHead>
+                          <TableHead>Amount</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {unbilledCharges.map((charge) => {
+                          const isSelected = selectedCharges.has(charge.id);
+
+                          return (
+                            <TableRow
+                              key={charge.id}
+                              className={`cursor-pointer ${isSelected ? 'bg-primary-50/50 dark:bg-primary-900/20' : ''}`}
+                              onClick={() => toggleCharge(charge.id)}
+                            >
+                              <TableCell>
+                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                  isSelected
+                                    ? 'bg-primary-500 border-primary-500'
+                                    : 'border-gray-300 dark:border-gray-600'
+                                }`}>
+                                  {isSelected && <Check className="w-3 h-3 text-white" />}
+                                </div>
+                              </TableCell>
+                              <TableCell>{formatDate(charge.chargeDate)}</TableCell>
+                              <TableCell className="capitalize">
+                                {CHARGE_TYPE_LABELS[charge.chargeType] || charge.chargeType}
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">
+                                {charge.description}
+                              </TableCell>
+                              <TableCell>{charge.quantity}</TableCell>
+                              <TableCell>{formatCurrency(charge.unitPrice)}</TableCell>
+                              <TableCell className="font-medium">
+                                {formatCurrency(charge.total)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    No unbilled charges for this customer
                   </div>
                 )}
               </CardContent>

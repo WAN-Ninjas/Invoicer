@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Users,
   Clock,
+  DollarSign,
   FileText,
   Upload,
   Settings,
@@ -14,6 +15,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/customers', icon: Users, label: 'Customers' },
   { to: '/entries', icon: Clock, label: 'Time Entries' },
+  { to: '/charges', icon: DollarSign, label: 'Charges' },
   { to: '/import', icon: Upload, label: 'Import CSV' },
   { to: '/invoices', icon: FileText, label: 'Invoices' },
 ];

@@ -108,6 +108,9 @@ export async function getInvoiceWithDetails(id: string): Promise<InvoiceWithDeta
       entries: {
         orderBy: [{ entryDate: 'asc' }, { createdAt: 'asc' }],
       },
+      charges: {
+        orderBy: [{ chargeDate: 'asc' }, { createdAt: 'asc' }],
+      },
     },
   });
 
@@ -124,6 +127,12 @@ export async function getInvoiceWithDetails(id: string): Promise<InvoiceWithDeta
       hourlyRateOverride: toNumber(e.hourlyRateOverride),
       calculatedCost: toNumberRequired(e.calculatedCost),
     })),
+    charges: invoice.charges.map((c) => ({
+      ...c,
+      quantity: toNumberRequired(c.quantity),
+      unitPrice: toNumberRequired(c.unitPrice),
+      total: toNumberRequired(c.total),
+    })),
   };
 }
 
@@ -139,17 +148,37 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceW
     throw new Error('Customer not found');
   }
 
-  // Get entries
-  const entries = await prisma.timesheetEntry.findMany({
+  // Get entries (if any)
+  const entryIds = input.entryIds || [];
+  const entries = entryIds.length > 0 ? await prisma.timesheetEntry.findMany({
     where: {
-      id: { in: input.entryIds },
+      id: { in: entryIds },
       customerId: input.customerId,
       invoiceId: null, // Only unbilled entries
     },
-  });
+  }) : [];
 
-  if (entries.length !== input.entryIds.length) {
+  if (entryIds.length > 0 && entries.length !== entryIds.length) {
     throw new Error('Some entries are not available for invoicing');
+  }
+
+  // Get charges (if any)
+  const chargeIds = (input as { chargeIds?: string[] }).chargeIds || [];
+  const charges = chargeIds.length > 0 ? await prisma.charge.findMany({
+    where: {
+      id: { in: chargeIds },
+      customerId: input.customerId,
+      invoiceId: null, // Only unbilled charges
+    },
+  }) : [];
+
+  if (chargeIds.length > 0 && charges.length !== chargeIds.length) {
+    throw new Error('Some charges are not available for invoicing');
+  }
+
+  // Require at least one entry or charge
+  if (entries.length === 0 && charges.length === 0) {
+    throw new Error('Invoice must have at least one entry or charge');
   }
 
   // Calculate totals
@@ -159,7 +188,8 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceW
     taxRate,
   };
 
-  const subtotal = entries.reduce((sum, entry) => {
+  // Calculate time entries subtotal
+  const entriesSubtotal = entries.reduce((sum, entry) => {
     const cost = calculateEntryCost(
       {
         totalMinutes: entry.totalMinutes,
@@ -171,10 +201,16 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceW
     return sum + cost;
   }, 0);
 
+  // Calculate charges subtotal
+  const chargesSubtotal = charges.reduce((sum, charge) => {
+    return sum + charge.total.toNumber();
+  }, 0);
+
+  const subtotal = entriesSubtotal + chargesSubtotal;
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const total = Math.round((subtotal + taxAmount) * 100) / 100;
 
-  // Create invoice and assign entries in a transaction
+  // Create invoice and assign entries/charges in a transaction
   const invoice = await prisma.$transaction(async (tx) => {
     const newInvoice = await tx.invoice.create({
       data: {
@@ -191,10 +227,20 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceW
     });
 
     // Assign entries to invoice
-    await tx.timesheetEntry.updateMany({
-      where: { id: { in: input.entryIds } },
-      data: { invoiceId: newInvoice.id },
-    });
+    if (entryIds.length > 0) {
+      await tx.timesheetEntry.updateMany({
+        where: { id: { in: entryIds } },
+        data: { invoiceId: newInvoice.id },
+      });
+    }
+
+    // Assign charges to invoice
+    if (chargeIds.length > 0) {
+      await tx.charge.updateMany({
+        where: { id: { in: chargeIds } },
+        data: { invoiceId: newInvoice.id },
+      });
+    }
 
     return newInvoice;
   });
@@ -295,9 +341,14 @@ export async function deleteInvoice(id: string): Promise<void> {
     throw new Error('Can only delete draft invoices');
   }
 
-  // Remove entries from invoice and delete
+  // Remove entries and charges from invoice and delete
   await prisma.$transaction(async (tx) => {
     await tx.timesheetEntry.updateMany({
+      where: { invoiceId: id },
+      data: { invoiceId: null },
+    });
+
+    await tx.charge.updateMany({
       where: { invoiceId: id },
       data: { invoiceId: null },
     });
@@ -314,6 +365,7 @@ export async function recalculateInvoiceTotals(id: string): Promise<InvoiceWithD
     include: {
       customer: true,
       entries: true,
+      charges: true,
     },
   });
 
@@ -321,7 +373,8 @@ export async function recalculateInvoiceTotals(id: string): Promise<InvoiceWithD
     throw new Error('Invoice not found');
   }
 
-  const subtotal = invoice.entries.reduce((sum, entry) => {
+  // Calculate time entries subtotal
+  const entriesSubtotal = invoice.entries.reduce((sum, entry) => {
     const cost = calculateEntryCost(
       {
         totalMinutes: entry.totalMinutes,
@@ -333,6 +386,12 @@ export async function recalculateInvoiceTotals(id: string): Promise<InvoiceWithD
     return sum + cost;
   }, 0);
 
+  // Calculate charges subtotal
+  const chargesSubtotal = invoice.charges.reduce((sum, charge) => {
+    return sum + charge.total.toNumber();
+  }, 0);
+
+  const subtotal = entriesSubtotal + chargesSubtotal;
   const taxAmount = Math.round(subtotal * invoice.taxRate.toNumber() * 100) / 100;
   const total = Math.round((subtotal + taxAmount) * 100) / 100;
 

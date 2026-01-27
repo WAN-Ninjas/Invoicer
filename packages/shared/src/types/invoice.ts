@@ -1,5 +1,6 @@
 import type { Customer } from './customer.js';
 import type { TimesheetEntry } from './entry.js';
+import type { Charge } from './charge.js';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
@@ -24,11 +25,13 @@ export interface Invoice {
 export interface InvoiceWithDetails extends Invoice {
   customer: Customer;
   entries: TimesheetEntry[];
+  charges?: Charge[];
 }
 
 export interface CreateInvoiceInput {
   customerId: string;
-  entryIds: string[];
+  entryIds?: string[];
+  chargeIds?: string[];
   hourlyRateOverride?: number;
   taxRate?: number;
   notes?: string;

@@ -49,5 +49,5 @@ RUN mkdir -p uploads/logos
 
 EXPOSE 3000
 
-# Sync database schema and start
-CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
+# Run migrations and start
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]

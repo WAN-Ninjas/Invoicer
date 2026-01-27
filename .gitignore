@@ -44,3 +44,14 @@ uploads/
 
 # Docker
 .docker/
+
+# Backups and exports
+backups/
+exports/
+
+# Secrets and credentials
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.json

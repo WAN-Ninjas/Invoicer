@@ -10,6 +10,7 @@ export function formatCurrency(amount: number): string {
 
 /**
  * Format a date as MM/DD/YYYY
+ * Uses UTC timezone to avoid date shifting from timezone conversion
  */
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -17,11 +18,13 @@ export function formatDate(date: Date | string): string {
     month: '2-digit',
     day: '2-digit',
     year: 'numeric',
+    timeZone: 'UTC',
   }).format(d);
 }
 
 /**
  * Format a date as a long format (e.g., "January 15, 2024")
+ * Uses UTC timezone to avoid date shifting from timezone conversion
  */
 export function formatDateLong(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -29,6 +32,7 @@ export function formatDateLong(date: Date | string): string {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   }).format(d);
 }
 

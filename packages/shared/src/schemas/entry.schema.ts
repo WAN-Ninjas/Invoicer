@@ -13,6 +13,7 @@ export const createEntrySchema = z.object({
 });
 
 export const updateEntrySchema = z.object({
+  customerId: z.string().uuid().optional(),
   invoiceId: z.string().uuid().nullable().optional(),
   entryDate: z.string().or(z.date()).optional(),
   startTime: z.string().nullable().optional(),

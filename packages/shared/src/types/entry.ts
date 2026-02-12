@@ -28,6 +28,7 @@ export interface CreateEntryInput {
 }
 
 export interface UpdateEntryInput {
+  customerId?: string;
   invoiceId?: string | null;
   entryDate?: Date | string;
   startTime?: string | null;

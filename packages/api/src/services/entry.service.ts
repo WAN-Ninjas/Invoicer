@@ -130,6 +130,21 @@ export async function updateEntry(
     throw new Error('Entry not found');
   }
 
+  // If customer is changing, get the new customer's default rate
+  const customerId = input.customerId ?? currentEntry.customerId;
+  let customerDefaultRate = currentEntry.customer.defaultHourlyRate.toNumber();
+
+  if (input.customerId && input.customerId !== currentEntry.customerId) {
+    const newCustomer = await prisma.customer.findUnique({
+      where: { id: input.customerId },
+      select: { defaultHourlyRate: true },
+    });
+    if (!newCustomer) {
+      throw new Error('Customer not found');
+    }
+    customerDefaultRate = newCustomer.defaultHourlyRate.toNumber();
+  }
+
   // Determine if we need to recalculate cost
   const totalMinutes = input.totalMinutes ?? currentEntry.totalMinutes;
   const hourlyRateOverride =
@@ -137,12 +152,13 @@ export async function updateEntry(
       ? input.hourlyRateOverride
       : toNumber(currentEntry.hourlyRateOverride);
 
-  const hourlyRate = hourlyRateOverride ?? currentEntry.customer.defaultHourlyRate.toNumber();
+  const hourlyRate = hourlyRateOverride ?? customerDefaultRate;
   const calculatedCost = calculateCost(totalMinutes, hourlyRate);
 
   const entry = await prisma.timesheetEntry.update({
     where: { id },
     data: {
+      customerId,
       invoiceId: input.invoiceId,
       entryDate: input.entryDate ? new Date(input.entryDate) : undefined,
       startTime: input.startTime,

@@ -111,4 +111,16 @@ export const invoicesApi = {
   downloadPdf: (id: string) =>
     api.get(`/invoices/${id}/pdf`, { responseType: 'blob' }),
   send: (id: string, email?: string) => api.post(`/invoices/${id}/send`, { email }),
+  sendReminder: (id: string, email?: string) => api.post(`/invoices/${id}/remind`, { email }),
+};
+
+// Templates
+export const templatesApi = {
+  getAll: () => api.get('/templates'),
+  getByType: (type: string) => api.get(`/templates/${type}`),
+  update: (type: string, data: { name?: string; subject?: string | null; htmlContent?: string }) =>
+    api.put(`/templates/${type}`, data),
+  reset: (type: string) => api.post(`/templates/${type}/reset`),
+  preview: (type: string, htmlContent: string) =>
+    api.post(`/templates/${type}/preview`, { htmlContent }),
 };

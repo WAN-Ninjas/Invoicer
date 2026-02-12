@@ -161,3 +161,15 @@ enum ChargeType {
   expense        // Reimbursable expenses
   other          // Miscellaneous charges
 }
+
+model Template {
+  id          String   @id @default(uuid())
+  type        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  subject     String?  @db.VarChar(255)
+  htmlContent String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("templates")
+}

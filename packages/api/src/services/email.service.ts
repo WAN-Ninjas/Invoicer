@@ -3,7 +3,12 @@ import { prisma } from '../config/database.js';
 import { getSettings } from './settings.service.js';
 import { getInvoiceWithDetails } from './invoice.service.js';
 import { generateInvoicePdf } from './pdf.service.js';
-import { formatCurrency, formatDateLong } from '@invoicer/shared';
+import {
+  getTemplate,
+  getDefaultTemplate,
+  processTemplate,
+  buildTemplateContext,
+} from './template.service.js';
 
 interface SendInvoiceResult {
   success: boolean;
@@ -47,35 +52,15 @@ export async function sendInvoiceEmail(
   // Generate PDF
   const pdfBuffer = await generateInvoicePdf(invoiceId);
 
-  // Email content
-  const subject = `Invoice ${invoice.invoiceNumber} from ${settings.companyName}`;
-  const htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Invoice ${invoice.invoiceNumber}</h2>
+  // Get email template
+  const template = await getTemplate('invoice_email') || getDefaultTemplate('invoice_email');
 
-      <p>Dear ${invoice.customer.name},</p>
+  // Build template context
+  const context = buildTemplateContext(invoice, settings);
 
-      <p>Please find attached invoice <strong>${invoice.invoiceNumber}</strong> for services rendered.</p>
-
-      <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${invoice.invoiceNumber}</p>
-        <p style="margin: 5px 0;"><strong>Date:</strong> ${formatDateLong(invoice.createdAt)}</p>
-        ${invoice.dueDate ? `<p style="margin: 5px 0;"><strong>Due Date:</strong> ${formatDateLong(invoice.dueDate)}</p>` : ''}
-        <p style="margin: 15px 0 5px 0; font-size: 18px;"><strong>Amount Due: ${formatCurrency(invoice.total)}</strong></p>
-      </div>
-
-      <p>If you have any questions about this invoice, please don't hesitate to contact us.</p>
-
-      <p>Thank you for your business!</p>
-
-      <p style="margin-top: 30px;">
-        Best regards,<br>
-        <strong>${settings.companyName}</strong>
-        ${settings.companyEmail ? `<br>${settings.companyEmail}` : ''}
-        ${settings.companyPhone ? `<br>${settings.companyPhone}` : ''}
-      </p>
-    </div>
-  `;
+  // Process template
+  const subject = processTemplate(template.subject || 'Invoice {{invoice.invoiceNumber}}', context);
+  const htmlContent = processTemplate(template.htmlContent, context);
 
   try {
     const info = await transporter.sendMail({
@@ -120,6 +105,101 @@ export async function sendInvoiceEmail(
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     // Log failed send
+    await prisma.emailLog.create({
+      data: {
+        invoiceId,
+        recipientEmail: toEmail,
+        subject,
+        status: 'failed',
+        errorMessage,
+      },
+    });
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+export async function sendReminderEmail(
+  invoiceId: string,
+  recipientEmail?: string
+): Promise<SendInvoiceResult> {
+  const invoice = await getInvoiceWithDetails(invoiceId);
+  if (!invoice) {
+    throw new Error('Invoice not found');
+  }
+
+  if (invoice.status !== 'sent' && invoice.status !== 'overdue') {
+    throw new Error('Can only send reminders for sent or overdue invoices');
+  }
+
+  const settings = await getSettings();
+
+  const toEmail = recipientEmail || invoice.customer.email;
+  if (!toEmail) {
+    throw new Error('No recipient email address provided');
+  }
+
+  if (!settings.mailgunSmtpUser || !settings.mailgunSmtpPass) {
+    throw new Error('Email not configured. Please set up Mailgun SMTP in settings.');
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: settings.mailgunSmtpHost,
+    port: settings.mailgunSmtpPort,
+    secure: false,
+    auth: {
+      user: settings.mailgunSmtpUser,
+      pass: settings.mailgunSmtpPass,
+    },
+  });
+
+  const pdfBuffer = await generateInvoicePdf(invoiceId);
+
+  // Get reminder email template
+  const template = await getTemplate('reminder_email') || getDefaultTemplate('reminder_email');
+
+  // Build template context
+  const context = buildTemplateContext(invoice, settings);
+
+  // Process template
+  const subject = processTemplate(template.subject || 'Friendly Reminder: Invoice {{invoice.invoiceNumber}}', context);
+  const htmlContent = processTemplate(template.htmlContent, context);
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"${settings.companyName}" <${settings.mailgunFromEmail}>`,
+      to: toEmail,
+      subject,
+      html: htmlContent,
+      attachments: [
+        {
+          filename: `${invoice.invoiceNumber}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
+    });
+
+    await prisma.emailLog.create({
+      data: {
+        invoiceId,
+        recipientEmail: toEmail,
+        subject,
+        status: 'sent',
+        mailgunMessageId: info.messageId,
+      },
+    });
+
+    return {
+      success: true,
+      messageId: info.messageId,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
     await prisma.emailLog.create({
       data: {
         invoiceId,

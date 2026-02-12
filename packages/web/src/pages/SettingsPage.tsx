@@ -6,13 +6,22 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { FileUpload } from '@/components/ui/FileUpload';
+import { TemplateEditor } from '@/components/templates/TemplateEditor';
 import { settingsApi } from '@/services/api';
-import { Building2, Mail, Lock, DollarSign } from 'lucide-react';
+import { Building2, Mail, Lock, DollarSign, FileText } from 'lucide-react';
 import { useState } from 'react';
+import type { TemplateType } from '@invoicer/shared';
+
+const TEMPLATE_TABS: { type: TemplateType; label: string }[] = [
+  { type: 'invoice_email', label: 'Invoice Email' },
+  { type: 'reminder_email', label: 'Reminder Email' },
+  { type: 'invoice_pdf', label: 'Invoice PDF' },
+];
 
 export function SettingsPage() {
   const queryClient = useQueryClient();
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('invoice_email');
 
   const { data: settings, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ['settings'],
@@ -308,6 +317,40 @@ export function SettingsPage() {
                 Update Password
               </Button>
             </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Email & PDF Templates - Full width */}
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary-500" />
+              Email & PDF Templates
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Tab buttons */}
+            <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+              {TEMPLATE_TABS.map((tab) => (
+                <button
+                  key={tab.type}
+                  type="button"
+                  onClick={() => setSelectedTemplate(tab.type)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    selectedTemplate === tab.type
+                      ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Template editor */}
+            <TemplateEditor templateType={selectedTemplate} />
           </CardContent>
         </Card>
       </div>

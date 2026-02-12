@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { env, validateEnv } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { initializeSettings } from './services/settings.service.js';
+import { initializeDefaultTemplates } from './services/template.service.js';
 import { logger } from './utils/logger.js';
 
 async function main() {
@@ -14,6 +15,9 @@ async function main() {
 
     // Initialize default settings
     await initializeSettings();
+
+    // Initialize default templates
+    await initializeDefaultTemplates();
 
     // Create and start app
     const app = createApp();

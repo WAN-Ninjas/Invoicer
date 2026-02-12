@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import * as invoiceService from '../services/invoice.service.js';
 import { generateInvoicePdf } from '../services/pdf.service.js';
-import { sendInvoiceEmail } from '../services/email.service.js';
+import { sendInvoiceEmail, sendReminderEmail } from '../services/email.service.js';
 import {
   createInvoiceSchema,
   updateInvoiceSchema,
@@ -161,6 +161,23 @@ export async function sendEmail(req: Request, res: Response): Promise<void> {
   res.json({
     success: true,
     message: 'Invoice sent successfully',
+    messageId: result.messageId,
+  });
+}
+
+export async function sendReminder(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { email } = req.body;
+
+  const result = await sendReminderEmail(id, email);
+
+  if (!result.success) {
+    throw new AppError(500, result.error || 'Failed to send reminder');
+  }
+
+  res.json({
+    success: true,
+    message: 'Reminder sent successfully',
     messageId: result.messageId,
   });
 }

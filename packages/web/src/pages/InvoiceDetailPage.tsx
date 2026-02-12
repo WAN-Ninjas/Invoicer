@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Send, Check, X, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Download, Send, Check, X, RotateCcw, Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -19,6 +19,8 @@ export function InvoiceDetailPage() {
   const queryClient = useQueryClient();
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [sendEmail, setSendEmail] = useState('');
+  const [reminderModalOpen, setReminderModalOpen] = useState(false);
+  const [reminderEmail, setReminderEmail] = useState('');
 
   const { data: invoice, isLoading } = useQuery<InvoiceWithDetails>({
     queryKey: ['invoice', id],
@@ -54,6 +56,18 @@ export function InvoiceDetailPage() {
     onError: () => toast.error('Failed to send invoice'),
   });
 
+  const reminderMutation = useMutation({
+    mutationFn: async (email?: string) => {
+      return invoicesApi.sendReminder(id!, email);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+      setReminderModalOpen(false);
+      toast.success('Reminder sent');
+    },
+    onError: () => toast.error('Failed to send reminder'),
+  });
+
   const downloadPdf = async () => {
     if (!invoice) return;
     try {
@@ -74,6 +88,10 @@ export function InvoiceDetailPage() {
 
   const handleSend = () => {
     sendMutation.mutate(sendEmail || undefined);
+  };
+
+  const handleReminder = () => {
+    reminderMutation.mutate(reminderEmail || undefined);
   };
 
   if (isLoading) {
@@ -308,12 +326,12 @@ export function InvoiceDetailPage() {
                   variant="secondary"
                   className="w-full"
                   onClick={() => {
-                    setSendEmail(invoice.customer.email || '');
-                    setSendModalOpen(true);
+                    setReminderEmail(invoice.customer.email || '');
+                    setReminderModalOpen(true);
                   }}
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  Resend
+                  <Bell className="w-4 h-4 mr-2" />
+                  Send Reminder
                 </Button>
               )}
               {invoice.status !== 'cancelled' && invoice.status !== 'paid' && (
@@ -378,6 +396,39 @@ export function InvoiceDetailPage() {
             >
               <Send className="w-4 h-4 mr-2" />
               Send
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reminder Modal */}
+      <Modal
+        isOpen={reminderModalOpen}
+        onClose={() => setReminderModalOpen(false)}
+        title="Send Payment Reminder"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Recipient Email"
+            type="email"
+            value={reminderEmail}
+            onChange={(e) => setReminderEmail(e.target.value)}
+            placeholder="customer@example.com"
+          />
+          <p className="text-sm text-gray-500">
+            A friendly payment reminder will be sent with the invoice PDF attached.
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setReminderModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleReminder}
+              isLoading={reminderMutation.isPending}
+            >
+              <Bell className="w-4 h-4 mr-2" />
+              Send Reminder
             </Button>
           </div>
         </div>

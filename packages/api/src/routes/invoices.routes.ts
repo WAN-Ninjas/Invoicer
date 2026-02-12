@@ -22,5 +22,6 @@ router.post('/:id/recalculate', asyncHandler(invoicesController.recalculate));
 // PDF and email
 router.get('/:id/pdf', asyncHandler(invoicesController.downloadPdf));
 router.post('/:id/send', asyncHandler(invoicesController.sendEmail));
+router.post('/:id/remind', asyncHandler(invoicesController.sendReminder));
 
 export default router;

@@ -1,6 +1,6 @@
 # Invoicer
 
-A self-hosted invoicing system with CSV timesheet import, custom charges, hierarchical hourly rates, and a modern glassmorphism UI.
+A self-hosted, single-user invoicing system built for freelancers, consultants, and small IT shops who need straightforward invoice management without the complexity of full-blown accounting software. If you just need to track time, add charges, generate PDFs, and email invoices to your customers, Invoicer gets out of your way and lets you do exactly that — no multi-tenant setup, no user management overhead, no lengthy configuration wizards.
 
 ## Features
 
@@ -10,15 +10,17 @@ A self-hosted invoicing system with CSV timesheet import, custom charges, hierar
 - **Manual Entry**: Easy form for adding time entries
 - **Invoice Generation**: Create professional PDF invoices
 - **Email via Mailgun**: Send invoices directly to customers
+- **Editable Templates**: Customize email and PDF templates from the UI
+- **Send Reminders**: Resend invoices with a single click from the invoice detail page
 - **Dark/Light Mode**: Modern glassmorphism UI with theme toggle
-- **Docker Deployment**: Single command deployment
+- **Docker Deployment**: Single command deployment with four containers (PostgreSQL, API, Web, Nginx)
 
 ## Quick Start
 
 ### Prerequisites
 
 - Docker and Docker Compose
-- (Optional) Mailgun account for sending emails
+- (Optional) A Mailgun account for sending invoices via email
 
 ### Setup
 
@@ -44,12 +46,18 @@ A self-hosted invoicing system with CSV timesheet import, custom charges, hierar
    MAILGUN_FROM_EMAIL=invoices@your-domain.com
    ```
 
+   At minimum, set `DB_PASSWORD` and `SESSION_SECRET`. Email settings are only needed if you want to send invoices directly from the app.
+
 4. Start the application:
    ```bash
    docker compose up -d
    ```
 
+   This builds and starts four containers: PostgreSQL, the API server, the React frontend, and an Nginx reverse proxy. Database migrations run automatically on first start.
+
 5. Access the application at [http://localhost:8080](http://localhost:8080)
+
+   To use a different port, set `PORT` in your `.env` file (e.g., `PORT=3000`).
 
 ## Common Commands
 
@@ -62,25 +70,22 @@ docker compose up -d
 # Stop all services
 docker compose down
 
-# View logs
+# View logs (all services)
 docker compose logs -f
 
-# View logs for specific service
+# View logs for a specific service
 docker compose logs -f api
 docker compose logs -f web
 docker compose logs -f db
 
 # Rebuild after code changes
-docker compose build
-docker compose up -d
+docker compose build && docker compose up -d
 
-# Rebuild specific service
-docker compose build api
-docker compose up -d api
+# Rebuild a specific service
+docker compose build api && docker compose up -d api
 
 # Full rebuild (no cache)
-docker compose build --no-cache
-docker compose up -d
+docker compose build --no-cache && docker compose up -d
 ```
 
 ### Database Operations
@@ -92,7 +97,7 @@ docker exec invoicer-api npx prisma migrate deploy
 # Check migration status
 docker exec invoicer-api npx prisma migrate status
 
-# Open Prisma Studio (database GUI)
+# Open Prisma Studio (database GUI) — accessible at http://localhost:5555
 docker exec -it invoicer-api npx prisma studio
 
 # Reset database (WARNING: deletes all data)
@@ -105,27 +110,38 @@ docker exec invoicer-api npx prisma generate
 ### Backup & Restore
 
 ```bash
-# Quick backup (database only)
+# Back up the database
 ./scripts/backup.sh
 
-# Restore from backup
+# Restore from a backup
 ./scripts/restore.sh backups/invoicer_backup_YYYYMMDD_HHMMSS.tar.gz
 
-# Full portable export (includes Docker images)
+# Full portable export (database + Docker images)
 ./scripts/export-portable.sh
 ```
 
-### Development
+### Local Development
+
+Requires Node.js >= 20 and a running PostgreSQL instance.
 
 ```bash
 # Install dependencies
 npm install
 
-# Start development servers (requires local PostgreSQL)
+# Start both API and frontend dev servers
 npm run dev
 
-# Build all packages
+# Build all packages (shared → api → web)
 npm run build
+
+# Run database migrations locally
+npm run db:migrate
+
+# Generate Prisma client
+npm run db:generate
+
+# Seed the database
+npm run db:seed
 
 # Type check
 npm run typecheck
@@ -176,21 +192,21 @@ Hourly rates are applied in this order (most specific wins):
 ```
 Invoicer/
 ├── packages/
-│   ├── shared/          # Shared types & utilities
-│   ├── api/             # Express backend
+│   ├── shared/          # Shared TypeScript types & utilities
+│   ├── api/             # Express backend (TypeScript, Prisma, Puppeteer)
 │   │   ├── prisma/      # Database schema & migrations
 │   │   └── src/
 │   │       ├── controllers/
 │   │       ├── services/
 │   │       ├── routes/
 │   │       └── fonts/   # PDF fonts (Orbitron, Inter)
-│   └── web/             # React frontend
+│   └── web/             # React frontend (Vite, Tailwind CSS)
 │       └── src/
 │           ├── components/
 │           ├── pages/
 │           └── services/
-├── docker/              # Docker configuration
-├── scripts/             # Backup & deployment scripts
+├── docker/              # Dockerfiles & Nginx configs
+├── scripts/             # Backup, restore & export scripts
 └── docker-compose.yml
 ```
 
@@ -198,27 +214,15 @@ Invoicer/
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DB_PASSWORD` | PostgreSQL password | invoicer_password |
-| `SESSION_SECRET` | Session encryption key | (required in production) |
-| `PORT` | External port | 8080 |
-| `MAILGUN_SMTP_HOST` | SMTP server | smtp.mailgun.org |
-| `MAILGUN_SMTP_PORT` | SMTP port | 587 |
+| `DB_PASSWORD` | PostgreSQL password | `invoicer_password` |
+| `SESSION_SECRET` | Session encryption key | `change-this-in-production` |
+| `APP_URL` | Public URL of the application | `http://localhost:8080` |
+| `PORT` | External port exposed by Nginx | `8080` |
+| `MAILGUN_SMTP_HOST` | SMTP server | `smtp.mailgun.org` |
+| `MAILGUN_SMTP_PORT` | SMTP port | `587` |
 | `MAILGUN_SMTP_USER` | SMTP username | (empty) |
 | `MAILGUN_SMTP_PASS` | SMTP password | (empty) |
-| `MAILGUN_FROM_EMAIL` | Sender email | (empty) |
-
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/health` | Health check |
-| `GET/POST /api/customers` | Customer management |
-| `GET/POST /api/entries` | Time entry management |
-| `GET/POST /api/charges` | Custom charge management |
-| `GET/POST /api/invoices` | Invoice management |
-| `GET /api/invoices/:id/pdf` | Download invoice PDF |
-| `POST /api/invoices/:id/send` | Email invoice to customer |
-| `GET/PUT /api/settings` | Application settings |
+| `MAILGUN_FROM_EMAIL` | Sender email address | (empty) |
 
 ## License
 

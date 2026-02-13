@@ -65,6 +65,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/shared/dist ./node_modules/@invoicer/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./node_modules/@invoicer/shared/
 
+# Remove npm and its vulnerable dependencies from production image
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 # Create uploads directory and set ownership
 RUN mkdir -p uploads/logos && chown -R node:node /app
 
@@ -72,5 +75,5 @@ USER node
 
 EXPOSE 3000
 
-# Run migrations and start
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# Run migrations using prisma directly from node_modules, then start
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/index.js"]

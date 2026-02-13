@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import * as chargeService from '../services/charge.service.js';
-import { ChargeType } from '../generated/prisma/client.js';
+import type { ChargeType } from '../generated/prisma/client.js';
 
 export const createCharge = asyncHandler(async (req: Request, res: Response) => {
   const { customerId, chargeType, description, quantity, unitPrice, chargeDate, notes, invoiceId } = req.body;

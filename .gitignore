@@ -37,6 +37,7 @@ coverage/
 
 # Prisma
 packages/api/prisma/migrations/**/migration_lock.toml
+packages/api/src/generated/
 
 # Uploads
 uploads/

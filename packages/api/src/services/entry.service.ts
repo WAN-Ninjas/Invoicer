@@ -5,7 +5,8 @@ import type {
   UpdateEntryInput,
 } from '@invoicer/shared';
 import { calculateCost } from '@invoicer/shared';
-import { Decimal } from '@prisma/client/runtime/library';
+import type { Prisma } from '../generated/prisma/client.js';
+type Decimal = Prisma.Decimal;
 
 function toNumber(decimal: Decimal | null | undefined): number | null {
   if (decimal === null || decimal === undefined) return null;

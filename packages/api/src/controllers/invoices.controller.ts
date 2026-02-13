@@ -22,7 +22,7 @@ export async function getAll(req: Request, res: Response): Promise<void> {
 }
 
 export async function getById(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const invoice = await invoiceService.getInvoiceWithDetails(id);
 
   if (!invoice) {
@@ -52,7 +52,7 @@ export async function create(req: Request, res: Response): Promise<void> {
 }
 
 export async function update(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const data = updateInvoiceSchema.parse(req.body);
 
   try {
@@ -67,7 +67,7 @@ export async function update(req: Request, res: Response): Promise<void> {
 }
 
 export async function remove(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   try {
     await invoiceService.deleteInvoice(id);
@@ -81,7 +81,7 @@ export async function remove(req: Request, res: Response): Promise<void> {
 }
 
 export async function addEntries(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { entryIds } = addEntriesToInvoiceSchema.parse(req.body);
 
   // Get invoice to verify it exists and is draft
@@ -104,7 +104,8 @@ export async function addEntries(req: Request, res: Response): Promise<void> {
 }
 
 export async function removeEntry(req: Request, res: Response): Promise<void> {
-  const { id, entryId } = req.params;
+  const id = req.params.id as string;
+  const entryId = req.params.entryId as string;
 
   // Get invoice to verify it exists and is draft
   const invoice = await invoiceService.getInvoiceById(id);
@@ -125,13 +126,13 @@ export async function removeEntry(req: Request, res: Response): Promise<void> {
 }
 
 export async function recalculate(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const invoice = await invoiceService.recalculateInvoiceTotals(id);
   res.json(invoice);
 }
 
 export async function downloadPdf(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const invoice = await invoiceService.getInvoiceById(id);
   if (!invoice) {
@@ -149,7 +150,7 @@ export async function downloadPdf(req: Request, res: Response): Promise<void> {
 }
 
 export async function sendEmail(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { email } = req.body;
 
   const result = await sendInvoiceEmail(id, email);
@@ -166,7 +167,7 @@ export async function sendEmail(req: Request, res: Response): Promise<void> {
 }
 
 export async function sendReminder(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { email } = req.body;
 
   const result = await sendReminderEmail(id, email);

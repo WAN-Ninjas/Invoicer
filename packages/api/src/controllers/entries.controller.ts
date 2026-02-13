@@ -17,7 +17,7 @@ export async function getAll(req: Request, res: Response): Promise<void> {
 }
 
 export async function getById(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const entry = await entryService.getEntryById(id);
 
   if (!entry) {
@@ -28,7 +28,7 @@ export async function getById(req: Request, res: Response): Promise<void> {
 }
 
 export async function getUnbilled(req: Request, res: Response): Promise<void> {
-  const { customerId } = req.params;
+  const customerId = req.params.customerId as string;
   const entries = await entryService.getUnbilledEntriesByCustomer(customerId);
   res.json(entries);
 }
@@ -40,14 +40,14 @@ export async function create(req: Request, res: Response): Promise<void> {
 }
 
 export async function update(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const data = updateEntrySchema.parse(req.body);
   const entry = await entryService.updateEntry(id, data);
   res.json(entry);
 }
 
 export async function remove(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   try {
     await entryService.deleteEntry(id);

@@ -15,7 +15,7 @@ export async function getAll(_req: Request, res: Response): Promise<void> {
 }
 
 export async function getByType(req: Request, res: Response): Promise<void> {
-  const { type } = req.params;
+  const type = req.params.type as string;
 
   if (!isValidTemplateType(type)) {
     throw new AppError(400, `Invalid template type: ${type}`);
@@ -41,7 +41,7 @@ export async function getByType(req: Request, res: Response): Promise<void> {
 }
 
 export async function update(req: Request, res: Response): Promise<void> {
-  const { type } = req.params;
+  const type = req.params.type as string;
 
   if (!isValidTemplateType(type)) {
     throw new AppError(400, `Invalid template type: ${type}`);
@@ -73,7 +73,7 @@ export async function update(req: Request, res: Response): Promise<void> {
 }
 
 export async function reset(req: Request, res: Response): Promise<void> {
-  const { type } = req.params;
+  const type = req.params.type as string;
 
   if (!isValidTemplateType(type)) {
     throw new AppError(400, `Invalid template type: ${type}`);
@@ -101,7 +101,7 @@ export async function reset(req: Request, res: Response): Promise<void> {
 }
 
 export async function preview(req: Request, res: Response): Promise<void> {
-  const { type } = req.params;
+  const type = req.params.type as string;
   const { htmlContent } = req.body;
 
   if (!isValidTemplateType(type)) {

@@ -379,9 +379,10 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
               {templateType === 'invoice_pdf' ? (
                 <iframe
-                  srcDoc={previewHtml}
+                  srcDoc={DOMPurify.sanitize(previewHtml)}
                   className="w-full h-[600px] border rounded"
                   title="PDF Preview"
+                  sandbox="allow-same-origin"
                 />
               ) : (
                 <div

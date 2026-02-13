@@ -93,36 +93,37 @@ export async function importCsvEntries(
   const totalMinutes = entries.reduce((sum, e) => sum + e.totalMinutes, 0);
   const totalCost = calculateCost(totalMinutes, hourlyRate);
 
-  await prisma.importBatch.create({
-    data: {
-      id: batchId,
-      filename,
-      customerId,
-      entriesCount: entries.length,
-      totalMinutes,
-      totalCost,
-    },
-  });
+  // Atomically create batch + entries in a single transaction
+  const createdEntries = await prisma.$transaction(async (tx) => {
+    await tx.importBatch.create({
+      data: {
+        id: batchId,
+        filename,
+        customerId,
+        entriesCount: entries.length,
+        totalMinutes,
+        totalCost,
+      },
+    });
 
-  // Create timesheet entries in a single batch INSERT
-  await prisma.timesheetEntry.createMany({
-    data: entries.map((entry) => ({
-      customerId,
-      entryDate: new Date(entry.entryDate),
-      startTime: entry.startTime,
-      endTime: entry.endTime,
-      totalMinutes: entry.totalMinutes,
-      taskDescription: entry.taskDescription,
-      requestor: entry.requestor,
-      calculatedCost: calculateCost(entry.totalMinutes, hourlyRate),
-      importBatchId: batchId,
-    })),
-  });
+    await tx.timesheetEntry.createMany({
+      data: entries.map((entry) => ({
+        customerId,
+        entryDate: new Date(entry.entryDate),
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        totalMinutes: entry.totalMinutes,
+        taskDescription: entry.taskDescription,
+        requestor: entry.requestor,
+        calculatedCost: calculateCost(entry.totalMinutes, hourlyRate),
+        importBatchId: batchId,
+      })),
+    });
 
-  // Fetch the created entries to return them
-  const createdEntries = await prisma.timesheetEntry.findMany({
-    where: { importBatchId: batchId },
-    orderBy: { entryDate: 'asc' },
+    return tx.timesheetEntry.findMany({
+      where: { importBatchId: batchId },
+      orderBy: { entryDate: 'asc' },
+    });
   });
 
   return {

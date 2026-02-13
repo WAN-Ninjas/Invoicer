@@ -19,7 +19,7 @@ interface SendInvoiceResult {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validateEmail(email: string): void {
-  if (!EMAIL_REGEX.test(email) || /[\r\n]/.test(email)) {
+  if (!EMAIL_REGEX.test(email) || /[\r\n,;]/.test(email)) {
     throw new Error('Invalid email address');
   }
 }

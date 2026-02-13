@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Upload, X, FileText } from 'lucide-react';
 import { Button } from './Button';
 
@@ -12,6 +12,7 @@ interface FileUploadProps {
 }
 
 export function FileUpload({ accept, onChange, value, label, error, maxSizeMB = 10 }: FileUploadProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [sizeError, setSizeError] = useState('');
 
@@ -20,6 +21,8 @@ export function FileUpload({ accept, onChange, value, label, error, maxSizeMB = 
       setSizeError('');
       if (file && file.size > maxSizeMB * 1024 * 1024) {
         setSizeError(`File size exceeds ${maxSizeMB}MB limit`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        onChange(null);
         return;
       }
       onChange(file);
@@ -93,13 +96,14 @@ export function FileUpload({ accept, onChange, value, label, error, maxSizeMB = 
               ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
             }
-            ${error ? 'border-red-500/50' : ''}
+            ${error || sizeError ? 'border-red-500/50' : ''}
           `}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
           <input
+            ref={fileInputRef}
             type="file"
             accept={accept}
             onChange={handleFileChange}

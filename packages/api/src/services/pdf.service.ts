@@ -89,7 +89,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
 
     return Buffer.from(pdf);
   } finally {
-    await page?.close();
+    try { await page?.close(); } catch { /* ignore */ }
     await browser.close();
   }
 }

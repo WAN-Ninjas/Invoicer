@@ -16,7 +16,7 @@ interface SendInvoiceResult {
   error?: string;
 }
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 function validateEmail(email: string): void {
   if (!EMAIL_REGEX.test(email) || /[\r\n,;]/.test(email)) {

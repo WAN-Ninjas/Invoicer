@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { Prisma, ChargeType } from '@prisma/client';
+import { Prisma, ChargeType } from '../generated/prisma/client.js';
 
 export interface CreateChargeInput {
   customerId: string;

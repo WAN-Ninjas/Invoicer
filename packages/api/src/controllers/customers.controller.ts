@@ -9,7 +9,7 @@ export async function getAll(_req: Request, res: Response): Promise<void> {
 }
 
 export async function getById(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const customer = await customerService.getCustomerWithStats(id);
 
   if (!customer) {
@@ -26,14 +26,14 @@ export async function create(req: Request, res: Response): Promise<void> {
 }
 
 export async function update(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const data = updateCustomerSchema.parse(req.body);
   const customer = await customerService.updateCustomer(id, data);
   res.json(customer);
 }
 
 export async function remove(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   try {
     await customerService.deleteCustomer(id);

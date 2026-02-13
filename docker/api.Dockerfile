@@ -21,8 +21,8 @@ COPY tsconfig.base.json ./
 # Build shared package
 RUN npm run build --workspace=packages/shared
 
-# Generate Prisma client
-RUN npx prisma generate --schema=packages/api/prisma/schema.prisma
+# Generate Prisma client (Prisma 7 uses prisma.config.ts for config)
+RUN cd packages/api && npx prisma generate
 
 # Build API
 RUN npm run build --workspace=packages/api
@@ -59,8 +59,10 @@ WORKDIR /app
 
 # Copy built files
 COPY --from=builder /app/packages/api/dist ./dist
+COPY --from=builder /app/packages/api/src/generated ./src/generated
 COPY --from=builder /app/packages/api/package*.json ./
 COPY --from=builder /app/packages/api/prisma ./prisma
+COPY --from=builder /app/packages/api/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/shared/dist ./node_modules/@invoicer/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./node_modules/@invoicer/shared/

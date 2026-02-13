@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import * as chargeService from '../services/charge.service.js';
-import { ChargeType } from '@prisma/client';
+import { ChargeType } from '../generated/prisma/client.js';
 
 export const createCharge = asyncHandler(async (req: Request, res: Response) => {
   const { customerId, chargeType, description, quantity, unitPrice, chargeDate, notes, invoiceId } = req.body;
@@ -21,7 +21,7 @@ export const createCharge = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const updateCharge = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { chargeType, description, quantity, unitPrice, chargeDate, notes } = req.body;
 
   const charge = await chargeService.updateCharge(id, {
@@ -37,13 +37,13 @@ export const updateCharge = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const deleteCharge = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   await chargeService.deleteCharge(id);
   res.status(204).send();
 });
 
 export const getCharge = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const charge = await chargeService.getChargeById(id);
 
   if (!charge) {

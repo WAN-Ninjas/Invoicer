@@ -19,7 +19,7 @@
     "db:generate": "npm run db:generate --workspace=packages/api",
     "db:seed": "npm run db:seed --workspace=packages/api",
     "lint": "eslint packages/*/src",
-    "typecheck": "tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/api/tsconfig.json && tsc --noEmit -p packages/web/tsconfig.json"
+    "typecheck": "npm run build:shared && npm run db:generate && tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/api/tsconfig.json && tsc --noEmit -p packages/web/tsconfig.json"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

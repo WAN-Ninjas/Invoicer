@@ -18,6 +18,7 @@ services:
       - invoicer-net
 
   api:
+    image: ghcr.io/wan-ninjas/invoicer-api:latest
     build:
       context: .
       dockerfile: docker/api.Dockerfile
@@ -42,6 +43,7 @@ services:
       - invoicer-net
 
   web:
+    image: ghcr.io/wan-ninjas/invoicer-web:latest
     build:
       context: .
       dockerfile: docker/web.Dockerfile

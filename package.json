@@ -18,12 +18,14 @@
     "db:generate": "npm run db:generate --workspace=packages/api",
     "db:seed": "npm run db:seed --workspace=packages/api",
     "lint": "eslint packages/*/src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/api/tsconfig.json && tsc --noEmit -p packages/web/tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
     "concurrently": "^8.2.2",
-    "eslint": "^8.55.0",
+    "eslint": "^8.57.0",
     "typescript": "^5.3.3"
   },
   "engines": {

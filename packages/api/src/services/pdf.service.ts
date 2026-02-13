@@ -89,7 +89,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
 
     return Buffer.from(pdf);
   } finally {
-    try { await page?.close(); } catch { /* ignore */ }
+    try { await page?.close(); } catch (e) { console.warn('Failed to close Puppeteer page:', e); }
     await browser.close();
   }
 }

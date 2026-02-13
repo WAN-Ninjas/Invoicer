@@ -62,6 +62,8 @@ export function FileUpload({ accept, onChange, value, label, error, maxSizeMB = 
 
   const clearFile = useCallback(() => {
     onChange(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setSizeError('');
   }, [onChange]);
 
   return (

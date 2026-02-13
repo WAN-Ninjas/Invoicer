@@ -73,7 +73,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
     content: '',
     editorProps: {
       attributes: {
-        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4',
+        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-hidden min-h-[300px] p-4',
       },
     },
     onUpdate: ({ editor }) => {
@@ -209,7 +209,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <button
               type="button"
               onClick={() => editor?.chain().focus().toggleBold().run()}
-              className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+              className={`p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
               title="Bold"
             >
               <Bold className="w-4 h-4" />
@@ -217,7 +217,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <button
               type="button"
               onClick={() => editor?.chain().focus().toggleItalic().run()}
-              className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+              className={`p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
               title="Italic"
             >
               <Italic className="w-4 h-4" />
@@ -225,7 +225,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <button
               type="button"
               onClick={setLink}
-              className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive('link') ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+              className={`p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive('link') ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
               title="Add Link"
             >
               <LinkIcon className="w-4 h-4" />
@@ -233,7 +233,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <button
               type="button"
               onClick={addImage}
-              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Add Image"
             >
               <ImageIcon className="w-4 h-4" />
@@ -242,7 +242,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <button
               type="button"
               onClick={() => editor?.chain().focus().setTextAlign('left').run()}
-              className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive({ textAlign: 'left' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+              className={`p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive({ textAlign: 'left' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
               title="Align Left"
             >
               <AlignLeft className="w-4 h-4" />
@@ -250,7 +250,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <button
               type="button"
               onClick={() => editor?.chain().focus().setTextAlign('center').run()}
-              className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive({ textAlign: 'center' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+              className={`p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive({ textAlign: 'center' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
               title="Align Center"
             >
               <AlignCenter className="w-4 h-4" />
@@ -258,7 +258,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <button
               type="button"
               onClick={() => editor?.chain().focus().setTextAlign('right').run()}
-              className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive({ textAlign: 'right' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+              className={`p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 ${editor?.isActive({ textAlign: 'right' }) ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
               title="Align Right"
             >
               <AlignRight className="w-4 h-4" />
@@ -266,7 +266,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <button
               type="button"
               onClick={setColor}
-              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Text Color"
             >
               <Palette className="w-4 h-4" />
@@ -280,7 +280,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
           <button
             type="button"
             onClick={() => setShowVariables(!showVariables)}
-            className="flex items-center gap-1 px-3 py-2 text-sm rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+            className="flex items-center gap-1 px-3 py-2 text-sm rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700"
           >
             Insert Variable
             <ChevronDown className="w-4 h-4" />
@@ -308,7 +308,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
         <button
           type="button"
           onClick={() => setIsHtmlMode(!isHtmlMode)}
-          className={`flex items-center gap-1 px-3 py-2 text-sm rounded ${isHtmlMode ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+          className={`flex items-center gap-1 px-3 py-2 text-sm rounded-sm ${isHtmlMode ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
         >
           <Code className="w-4 h-4" />
           {isHtmlMode ? 'WYSIWYG' : 'HTML'}
@@ -322,7 +322,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             data-html-editor
             value={htmlContent}
             onChange={(e) => setHtmlContent(e.target.value)}
-            className="w-full h-[400px] p-4 font-mono text-sm bg-transparent border-none focus:outline-none resize-none"
+            className="w-full h-[400px] p-4 font-mono text-sm bg-transparent border-none focus:outline-hidden resize-none"
             placeholder="Enter HTML content..."
           />
         ) : (
@@ -371,7 +371,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
               <button
                 type="button"
                 onClick={() => setShowPreview(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-sm"
               >
                 &times;
               </button>
@@ -380,7 +380,7 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
               {templateType === 'invoice_pdf' ? (
                 <iframe
                   srcDoc={DOMPurify.sanitize(previewHtml)}
-                  className="w-full h-[600px] border rounded"
+                  className="w-full h-[600px] border rounded-sm"
                   title="PDF Preview"
                   sandbox="allow-same-origin"
                 />

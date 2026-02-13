@@ -142,7 +142,7 @@ export function EntriesPage() {
                 type="checkbox"
                 checked={showUnbilledOnly}
                 onChange={(e) => setShowUnbilledOnly(e.target.checked)}
-                className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                className="rounded-sm border-gray-300 text-primary-500 focus:ring-primary-500"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
                 Unbilled only

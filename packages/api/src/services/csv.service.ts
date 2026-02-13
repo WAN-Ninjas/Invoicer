@@ -8,7 +8,7 @@ import {
   calculateCost,
 } from '@invoicer/shared';
 import type { CsvRow, CsvImportPreview, ParsedCsvEntry, TimesheetEntry } from '@invoicer/shared';
-import { Prisma } from '../generated/prisma/client.js';
+import type { Prisma } from '../generated/prisma/client.js';
 type Decimal = Prisma.Decimal;
 
 function toNumber(decimal: Decimal | null | undefined): number {

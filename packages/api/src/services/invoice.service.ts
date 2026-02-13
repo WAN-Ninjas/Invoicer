@@ -9,7 +9,7 @@ import type {
 } from '@invoicer/shared';
 import { calculateEntryCost, generateInvoiceNumber } from '@invoicer/shared';
 import { getSetting } from './settings.service.js';
-import { Prisma } from '../generated/prisma/client.js';
+import type { Prisma } from '../generated/prisma/client.js';
 type Decimal = Prisma.Decimal;
 
 function toNumber(decimal: Decimal | null | undefined): number | null {

@@ -59,7 +59,7 @@ WORKDIR /app
 
 # Copy built files
 COPY --from=builder /app/packages/api/dist ./dist
-COPY --from=builder /app/packages/api/src/generated ./src/generated
+COPY --from=builder /app/packages/api/src/generated ./dist/generated
 COPY --from=builder /app/packages/api/package*.json ./
 COPY --from=builder /app/packages/api/prisma ./prisma
 COPY --from=builder /app/packages/api/prisma.config.ts ./prisma.config.ts

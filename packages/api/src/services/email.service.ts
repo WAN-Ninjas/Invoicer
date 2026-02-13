@@ -16,6 +16,14 @@ interface SendInvoiceResult {
   error?: string;
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateEmail(email: string): void {
+  if (!EMAIL_REGEX.test(email) || /[\r\n]/.test(email)) {
+    throw new Error('Invalid email address');
+  }
+}
+
 export async function sendInvoiceEmail(
   invoiceId: string,
   recipientEmail?: string
@@ -32,6 +40,7 @@ export async function sendInvoiceEmail(
   if (!toEmail) {
     throw new Error('No recipient email address provided');
   }
+  validateEmail(toEmail);
 
   // Check if Mailgun is configured
   if (!settings.mailgunSmtpUser || !settings.mailgunSmtpPass) {
@@ -141,6 +150,7 @@ export async function sendReminderEmail(
   if (!toEmail) {
     throw new Error('No recipient email address provided');
   }
+  validateEmail(toEmail);
 
   if (!settings.mailgunSmtpUser || !settings.mailgunSmtpPass) {
     throw new Error('Email not configured. Please set up Mailgun SMTP in settings.');

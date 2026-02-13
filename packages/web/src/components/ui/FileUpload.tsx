@@ -8,10 +8,24 @@ interface FileUploadProps {
   value?: File | null;
   label?: string;
   error?: string;
+  maxSizeMB?: number;
 }
 
-export function FileUpload({ accept, onChange, value, label, error }: FileUploadProps) {
+export function FileUpload({ accept, onChange, value, label, error, maxSizeMB = 10 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [sizeError, setSizeError] = useState('');
+
+  const validateAndSet = useCallback(
+    (file: File | null) => {
+      setSizeError('');
+      if (file && file.size > maxSizeMB * 1024 * 1024) {
+        setSizeError(`File size exceeds ${maxSizeMB}MB limit`);
+        return;
+      }
+      onChange(file);
+    },
+    [onChange, maxSizeMB]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -29,18 +43,18 @@ export function FileUpload({ accept, onChange, value, label, error }: FileUpload
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
       if (file) {
-        onChange(file);
+        validateAndSet(file);
       }
     },
-    [onChange]
+    [validateAndSet]
   );
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0] || null;
-      onChange(file);
+      validateAndSet(file);
     },
-    [onChange]
+    [validateAndSet]
   );
 
   const clearFile = useCallback(() => {
@@ -105,8 +119,8 @@ export function FileUpload({ accept, onChange, value, label, error }: FileUpload
         </label>
       )}
 
-      {error && (
-        <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{error}</p>
+      {(error || sizeError) && (
+        <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{error || sizeError}</p>
       )}
     </div>
   );

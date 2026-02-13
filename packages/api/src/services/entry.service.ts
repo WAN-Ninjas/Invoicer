@@ -57,6 +57,7 @@ export async function getAllEntries(filters?: {
   const entries = await prisma.timesheetEntry.findMany({
     where,
     orderBy: [{ entryDate: 'desc' }, { createdAt: 'desc' }],
+    take: 500,
   });
 
   return entries.map(mapEntry);

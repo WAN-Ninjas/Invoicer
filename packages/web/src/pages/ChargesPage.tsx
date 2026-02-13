@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Textarea } from '@/components/ui/Textarea';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
@@ -40,6 +41,7 @@ export function ChargesPage() {
   const [showUnbilledOnly, setShowUnbilledOnly] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCharge, setEditingCharge] = useState<Charge | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: customers } = useQuery<Customer[]>({
@@ -228,11 +230,7 @@ export function ChargesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            if (confirm('Delete this charge?')) {
-                              deleteMutation.mutate(charge.id);
-                            }
-                          }}
+                          onClick={() => setDeleteTargetId(charge.id)}
                           disabled={!!charge.invoiceId}
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
@@ -258,6 +256,21 @@ export function ChargesPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        isOpen={!!deleteTargetId}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={() => {
+          if (deleteTargetId) {
+            deleteMutation.mutate(deleteTargetId);
+            setDeleteTargetId(null);
+          }
+        }}
+        title="Delete Charge"
+        message="Are you sure you want to delete this charge? This cannot be undone."
+        confirmLabel="Delete"
+        isLoading={deleteMutation.isPending}
+      />
 
       {/* Charge Modal */}
       <Modal

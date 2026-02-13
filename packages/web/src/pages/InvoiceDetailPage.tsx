@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { invoicesApi } from '@/services/api';
@@ -21,6 +22,7 @@ export function InvoiceDetailPage() {
   const [sendEmail, setSendEmail] = useState('');
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
   const [reminderEmail, setReminderEmail] = useState('');
+  const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; action: () => void } | null>(null);
 
   const { data: invoice, isLoading } = useQuery<InvoiceWithDetails>({
     queryKey: ['invoice', id],
@@ -338,11 +340,11 @@ export function InvoiceDetailPage() {
                 <Button
                   variant="danger"
                   className="w-full"
-                  onClick={() => {
-                    if (confirm('Cancel this invoice?')) {
-                      updateStatusMutation.mutate('cancelled');
-                    }
-                  }}
+                  onClick={() => setConfirmAction({
+                    title: 'Cancel Invoice',
+                    message: 'Are you sure you want to cancel this invoice?',
+                    action: () => updateStatusMutation.mutate('cancelled'),
+                  })}
                 >
                   <X className="w-4 h-4 mr-2" />
                   Cancel Invoice
@@ -352,11 +354,11 @@ export function InvoiceDetailPage() {
                 <Button
                   variant="secondary"
                   className="w-full"
-                  onClick={() => {
-                    if (confirm('Restore this invoice to draft status?')) {
-                      updateStatusMutation.mutate('draft');
-                    }
-                  }}
+                  onClick={() => setConfirmAction({
+                    title: 'Restore Invoice',
+                    message: 'Restore this invoice to draft status?',
+                    action: () => updateStatusMutation.mutate('draft'),
+                  })}
                   isLoading={updateStatusMutation.isPending}
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
@@ -367,6 +369,19 @@ export function InvoiceDetailPage() {
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          confirmAction?.action();
+          setConfirmAction(null);
+        }}
+        title={confirmAction?.title || ''}
+        message={confirmAction?.message || ''}
+        confirmLabel="Confirm"
+        isLoading={updateStatusMutation.isPending}
+      />
 
       {/* Send Modal */}
       <Modal

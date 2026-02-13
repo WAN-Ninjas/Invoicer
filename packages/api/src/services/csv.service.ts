@@ -104,26 +104,26 @@ export async function importCsvEntries(
     },
   });
 
-  // Create timesheet entries
-  const createdEntries = await Promise.all(
-    entries.map(async (entry) => {
-      const calculatedCost = calculateCost(entry.totalMinutes, hourlyRate);
+  // Create timesheet entries in a single batch INSERT
+  await prisma.timesheetEntry.createMany({
+    data: entries.map((entry) => ({
+      customerId,
+      entryDate: new Date(entry.entryDate),
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+      totalMinutes: entry.totalMinutes,
+      taskDescription: entry.taskDescription,
+      requestor: entry.requestor,
+      calculatedCost: calculateCost(entry.totalMinutes, hourlyRate),
+      importBatchId: batchId,
+    })),
+  });
 
-      return prisma.timesheetEntry.create({
-        data: {
-          customerId,
-          entryDate: new Date(entry.entryDate),
-          startTime: entry.startTime,
-          endTime: entry.endTime,
-          totalMinutes: entry.totalMinutes,
-          taskDescription: entry.taskDescription,
-          requestor: entry.requestor,
-          calculatedCost,
-          importBatchId: batchId,
-        },
-      });
-    })
-  );
+  // Fetch the created entries to return them
+  const createdEntries = await prisma.timesheetEntry.findMany({
+    where: { importBatchId: batchId },
+    orderBy: { entryDate: 'asc' },
+  });
 
   return {
     batchId,

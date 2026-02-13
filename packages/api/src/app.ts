@@ -38,10 +38,21 @@ export function createApp() {
   // CORS configuration
   app.use(
     cors({
-      origin: env.nodeEnv === 'development' ? true : env.appUrl,
+      origin: env.appUrl,
       credentials: true,
     })
   );
+
+  // CSRF protection: reject cross-origin state-changing requests
+  app.use((req, res, next) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      const origin = req.get('origin');
+      if (origin && origin !== env.appUrl) {
+        return res.status(403).json({ error: 'Cross-origin request denied' });
+      }
+    }
+    next();
+  });
 
   // Body parsing
   app.use(express.json());

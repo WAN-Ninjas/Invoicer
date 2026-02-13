@@ -61,7 +61,6 @@ WORKDIR /app
 COPY --from=builder /app/packages/api/dist ./dist
 COPY --from=builder /app/packages/api/package*.json ./
 COPY --from=builder /app/packages/api/prisma ./prisma
-COPY --from=builder /app/packages/api/src/fonts ./dist/fonts
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/shared/dist ./node_modules/@invoicer/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./node_modules/@invoicer/shared/

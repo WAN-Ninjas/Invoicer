@@ -46,7 +46,7 @@ A self-hosted, single-user invoicing system built for freelancers, consultants, 
    MAILGUN_FROM_EMAIL=invoices@your-domain.com
    ```
 
-   At minimum, set `DB_PASSWORD` and `SESSION_SECRET`. Email settings are only needed if you want to send invoices directly from the app.
+   `DB_PASSWORD` and `SESSION_SECRET` are required — the app will not start without them. You can generate a session secret with `openssl rand -base64 32`. Email settings are only needed if you want to send invoices directly from the app.
 
 4. Start the application:
    ```bash
@@ -156,7 +156,7 @@ The CSV importer expects files in this format:
 
 ```csv
 Date,Begin,End,Total Minutes,Task,Requestor,Company,Cost(90/hr),Running Total
-11/30/25,8:30 PM,10:00 PM,90,3CX Multicast Setup,Trent,Air Comm,$135.00,$ 135.00
+11/30/25,8:30 PM,10:00 PM,90,VoIP Phone System Setup,Alex,Acme Corp,$135.00,$ 135.00
 ```
 
 - **Date**: MM/DD/YY format
@@ -198,8 +198,7 @@ Invoicer/
 │   │   └── src/
 │   │       ├── controllers/
 │   │       ├── services/
-│   │       ├── routes/
-│   │       └── fonts/   # PDF fonts (Orbitron, Inter)
+│   │       └── routes/
 │   └── web/             # React frontend (Vite, Tailwind CSS)
 │       └── src/
 │           ├── components/
@@ -214,8 +213,8 @@ Invoicer/
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DB_PASSWORD` | PostgreSQL password | `invoicer_password` |
-| `SESSION_SECRET` | Session encryption key | `change-this-in-production` |
+| `DB_PASSWORD` | PostgreSQL password | (required) |
+| `SESSION_SECRET` | Session encryption key | (required) |
 | `APP_URL` | Public URL of the application | `http://localhost:8080` |
 | `PORT` | External port exposed by Nginx | `8080` |
 | `MAILGUN_SMTP_HOST` | SMTP server | `smtp.mailgun.org` |

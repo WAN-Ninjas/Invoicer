@@ -11,8 +11,8 @@ async function main() {
     update: {},
     create: {
       id: '00000000-0000-0000-0000-000000000001',
-      name: 'Air Comm',
-      email: 'billing@aircomm.example.com',
+      name: 'Acme Corp',
+      email: 'billing@acme.example.com',
       address: '123 Business St\nSuite 100\nAnytown, ST 12345',
       defaultHourlyRate: 90,
       notes: 'Sample customer for demo purposes',
@@ -31,7 +31,7 @@ async function main() {
       endTime: '12:00',
       totalMinutes: 180,
       taskDescription: 'Initial system setup and configuration',
-      requestor: 'John',
+      requestor: 'Alex',
       calculatedCost: 270,
     },
     {
@@ -42,7 +42,7 @@ async function main() {
       endTime: '16:30',
       totalMinutes: 150,
       taskDescription: 'Network troubleshooting and optimization',
-      requestor: 'Sarah',
+      requestor: 'Jordan',
       calculatedCost: 225,
     },
     {
@@ -53,7 +53,7 @@ async function main() {
       endTime: '11:00',
       totalMinutes: 60,
       taskDescription: 'User training session',
-      requestor: 'John',
+      requestor: 'Alex',
       calculatedCost: 90,
     },
   ];

@@ -12,7 +12,7 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3000', 10),
   databaseUrl: process.env.DATABASE_URL || '',
-  sessionSecret: process.env.SESSION_SECRET || 'change-this-secret-in-production',
+  sessionSecret: process.env.SESSION_SECRET || '',
   appUrl: process.env.APP_URL || 'http://localhost:8080',
 
   // Mailgun SMTP
@@ -30,7 +30,7 @@ export function validateEnv(): void {
     throw new Error('DATABASE_URL environment variable is required');
   }
 
-  if (env.nodeEnv === 'production' && env.sessionSecret === 'change-this-secret-in-production') {
-    throw new Error('SESSION_SECRET must be set in production');
+  if (!env.sessionSecret) {
+    throw new Error('SESSION_SECRET environment variable is required. Generate one with: openssl rand -base64 32');
   }
 }

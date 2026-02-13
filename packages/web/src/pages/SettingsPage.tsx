@@ -174,7 +174,7 @@ export function SettingsPage() {
                   <img
                     src={`/uploads/logos/${settings.companyLogo}`}
                     alt="Company Logo"
-                    className="max-h-20 rounded"
+                    className="max-h-20 rounded-sm"
                   />
                 </div>
               )}

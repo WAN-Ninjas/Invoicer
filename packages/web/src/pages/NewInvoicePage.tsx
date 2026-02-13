@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { FileText, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Header } from '@/components/layout/Header';
@@ -331,7 +331,7 @@ export function NewInvoicePage() {
                               onClick={() => toggleEntry(entry.id)}
                             >
                               <TableCell>
-                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                <div className={`w-5 h-5 rounded-sm border-2 flex items-center justify-center ${
                                   isSelected
                                     ? 'bg-primary-500 border-primary-500'
                                     : 'border-gray-300 dark:border-gray-600'
@@ -412,7 +412,7 @@ export function NewInvoicePage() {
                               onClick={() => toggleCharge(charge.id)}
                             >
                               <TableCell>
-                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                <div className={`w-5 h-5 rounded-sm border-2 flex items-center justify-center ${
                                   isSelected
                                     ? 'bg-primary-500 border-primary-500'
                                     : 'border-gray-300 dark:border-gray-600'

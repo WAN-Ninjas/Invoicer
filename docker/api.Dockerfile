@@ -65,8 +65,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/shared/dist ./node_modules/@invoicer/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./node_modules/@invoicer/shared/
 
-# Create uploads directory
-RUN mkdir -p uploads/logos
+# Create uploads directory and set ownership
+RUN mkdir -p uploads/logos && chown -R node:node /app
+
+USER node
 
 EXPOSE 3000
 

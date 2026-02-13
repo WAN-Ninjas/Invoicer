@@ -22,6 +22,7 @@ model Customer {
   charges          Charge[]
   importBatches    ImportBatch[]
 
+  @@index([name])
   @@map("customers")
 }
 

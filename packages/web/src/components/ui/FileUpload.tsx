@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Upload, X, FileText } from 'lucide-react';
 import { Button } from './Button';
 
@@ -8,10 +8,27 @@ interface FileUploadProps {
   value?: File | null;
   label?: string;
   error?: string;
+  maxSizeMB?: number;
 }
 
-export function FileUpload({ accept, onChange, value, label, error }: FileUploadProps) {
+export function FileUpload({ accept, onChange, value, label, error, maxSizeMB = 10 }: FileUploadProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [sizeError, setSizeError] = useState('');
+
+  const validateAndSet = useCallback(
+    (file: File | null) => {
+      setSizeError('');
+      if (file && file.size > maxSizeMB * 1024 * 1024) {
+        setSizeError(`File size exceeds ${maxSizeMB}MB limit`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        onChange(null);
+        return;
+      }
+      onChange(file);
+    },
+    [onChange, maxSizeMB]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -29,22 +46,24 @@ export function FileUpload({ accept, onChange, value, label, error }: FileUpload
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
       if (file) {
-        onChange(file);
+        validateAndSet(file);
       }
     },
-    [onChange]
+    [validateAndSet]
   );
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0] || null;
-      onChange(file);
+      validateAndSet(file);
     },
-    [onChange]
+    [validateAndSet]
   );
 
   const clearFile = useCallback(() => {
     onChange(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setSizeError('');
   }, [onChange]);
 
   return (
@@ -79,13 +98,14 @@ export function FileUpload({ accept, onChange, value, label, error }: FileUpload
               ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
             }
-            ${error ? 'border-red-500/50' : ''}
+            ${error || sizeError ? 'border-red-500/50' : ''}
           `}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
           <input
+            ref={fileInputRef}
             type="file"
             accept={accept}
             onChange={handleFileChange}
@@ -105,8 +125,8 @@ export function FileUpload({ accept, onChange, value, label, error }: FileUpload
         </label>
       )}
 
-      {error && (
-        <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{error}</p>
+      {(error || sizeError) && (
+        <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{error || sizeError}</p>
       )}
     </div>
   );

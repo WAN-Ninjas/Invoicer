@@ -71,8 +71,9 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   });
 
+  let page;
   try {
-    const page = await browser.newPage();
+    page = await browser.newPage();
     await page.setContent(processedHtml, { waitUntil: 'networkidle0' });
 
     const pdf = await page.pdf({
@@ -88,6 +89,7 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
 
     return Buffer.from(pdf);
   } finally {
+    try { await page?.close(); } catch (e) { console.warn('Failed to close Puppeteer page:', e); }
     await browser.close();
   }
 }

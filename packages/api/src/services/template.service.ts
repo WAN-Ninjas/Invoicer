@@ -406,27 +406,30 @@ export async function resetToDefault(type: TemplateType) {
 export function processTemplate(html: string, context: TemplateContext): string {
   let result = html;
 
-  // Replace simple variables
-  result = result.replace(/\{\{invoice\.invoiceNumber\}\}/g, context.invoice.invoiceNumber);
-  result = result.replace(/\{\{invoice\.createdAt\}\}/g, context.invoice.createdAt);
-  result = result.replace(/\{\{invoice\.dueDate\}\}/g, context.invoice.dueDate);
-  result = result.replace(/\{\{invoice\.subtotal\}\}/g, context.invoice.subtotal);
-  result = result.replace(/\{\{invoice\.taxRate\}\}/g, context.invoice.taxRate);
-  result = result.replace(/\{\{invoice\.taxAmount\}\}/g, context.invoice.taxAmount);
-  result = result.replace(/\{\{invoice\.total\}\}/g, context.invoice.total);
-  result = result.replace(/\{\{invoice\.notes\}\}/g, context.invoice.notes);
-  result = result.replace(/\{\{invoice\.sentAt\}\}/g, context.invoice.sentAt);
+  const esc = escapeHtml;
 
-  result = result.replace(/\{\{customer\.name\}\}/g, context.customer.name);
-  result = result.replace(/\{\{customer\.email\}\}/g, context.customer.email);
-  result = result.replace(/\{\{customer\.address\}\}/g, context.customer.address);
+  // Replace simple variables (escaped to prevent XSS)
+  result = result.replace(/\{\{invoice\.invoiceNumber\}\}/g, esc(context.invoice.invoiceNumber));
+  result = result.replace(/\{\{invoice\.createdAt\}\}/g, esc(context.invoice.createdAt));
+  result = result.replace(/\{\{invoice\.dueDate\}\}/g, esc(context.invoice.dueDate));
+  result = result.replace(/\{\{invoice\.subtotal\}\}/g, esc(context.invoice.subtotal));
+  result = result.replace(/\{\{invoice\.taxRate\}\}/g, esc(context.invoice.taxRate));
+  result = result.replace(/\{\{invoice\.taxAmount\}\}/g, esc(context.invoice.taxAmount));
+  result = result.replace(/\{\{invoice\.total\}\}/g, esc(context.invoice.total));
+  result = result.replace(/\{\{invoice\.notes\}\}/g, esc(context.invoice.notes));
+  result = result.replace(/\{\{invoice\.sentAt\}\}/g, esc(context.invoice.sentAt));
 
-  result = result.replace(/\{\{company\.name\}\}/g, context.company.name);
-  result = result.replace(/\{\{company\.email\}\}/g, context.company.email);
-  result = result.replace(/\{\{company\.phone\}\}/g, context.company.phone);
-  result = result.replace(/\{\{company\.address\}\}/g, context.company.address);
-  result = result.replace(/\{\{company\.logo\}\}/g, context.company.logo);
+  result = result.replace(/\{\{customer\.name\}\}/g, esc(context.customer.name));
+  result = result.replace(/\{\{customer\.email\}\}/g, esc(context.customer.email));
+  result = result.replace(/\{\{customer\.address\}\}/g, esc(context.customer.address));
 
+  result = result.replace(/\{\{company\.name\}\}/g, esc(context.company.name));
+  result = result.replace(/\{\{company\.email\}\}/g, esc(context.company.email));
+  result = result.replace(/\{\{company\.phone\}\}/g, esc(context.company.phone));
+  result = result.replace(/\{\{company\.address\}\}/g, esc(context.company.address));
+  result = result.replace(/\{\{company\.logo\}\}/g, esc(context.company.logo));
+
+  // lineItems is pre-built HTML, not user input — intentionally unescaped
   result = result.replace(/\{\{lineItems\}\}/g, context.lineItems);
 
   // Handle simple conditionals like {{#if company.logo}}...{{/if}}
@@ -436,6 +439,15 @@ export function processTemplate(html: string, context: TemplateContext): string 
   });
 
   return result;
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
@@ -587,9 +599,10 @@ export function buildLineItemsHtml(
     <tbody>`;
 
   for (const entry of entries) {
-    const desc = entry.taskDescription.length > 55
+    const rawDesc = entry.taskDescription.length > 55
       ? entry.taskDescription.substring(0, 52) + '...'
       : entry.taskDescription;
+    const desc = escapeHtml(rawDesc);
     html += `
       <tr>
         <td>${formatShortDate(entry.entryDate)}</td>
@@ -600,9 +613,10 @@ export function buildLineItemsHtml(
   }
 
   for (const charge of charges) {
-    const desc = charge.description.length > 55
+    const rawDesc = charge.description.length > 55
       ? charge.description.substring(0, 52) + '...'
       : charge.description;
+    const desc = escapeHtml(rawDesc);
     const qty = toNum(charge.quantity);
     html += `
       <tr>

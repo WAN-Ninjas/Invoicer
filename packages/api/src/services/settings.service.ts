@@ -65,8 +65,6 @@ export async function updateSettings(input: UpdateSettingsInput): Promise<AppSet
     }
   }
 
-  console.log('Updating settings:', updates.map(u => ({ key: u.key, valueType: typeof u.value })));
-
   // Upsert all settings
   await Promise.all(
     updates.map((update) =>
@@ -79,12 +77,6 @@ export async function updateSettings(input: UpdateSettingsInput): Promise<AppSet
   );
 
   const result = await getSettings();
-  console.log('Settings after update:', {
-    companyName: result.companyName,
-    companyEmail: result.companyEmail,
-    companyAddress: result.companyAddress
-  });
-
   return result;
 }
 

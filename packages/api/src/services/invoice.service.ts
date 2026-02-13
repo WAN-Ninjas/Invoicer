@@ -87,6 +87,7 @@ export async function getAllInvoices(filters?: {
   const invoices = await prisma.invoice.findMany({
     where,
     orderBy: { createdAt: 'desc' },
+    take: 500,
   });
 
   return invoices.map(mapInvoice);

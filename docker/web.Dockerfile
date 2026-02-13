@@ -24,6 +24,8 @@ RUN npm run build --workspace=packages/web
 # Production stage with nginx
 FROM nginx:alpine
 
+RUN apk add --no-cache curl
+
 # Copy built files
 COPY --from=builder /app/packages/web/dist /usr/share/nginx/html
 

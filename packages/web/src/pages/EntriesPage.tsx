@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Textarea } from '@/components/ui/Textarea';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
@@ -20,6 +21,7 @@ export function EntriesPage() {
   const [showUnbilledOnly, setShowUnbilledOnly] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntry | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: customers } = useQuery<Customer[]>({
@@ -196,11 +198,7 @@ export function EntriesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            if (confirm('Delete this entry?')) {
-                              deleteMutation.mutate(entry.id);
-                            }
-                          }}
+                          onClick={() => setDeleteTargetId(entry.id)}
                           disabled={!!entry.invoiceId}
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
@@ -226,6 +224,21 @@ export function EntriesPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        isOpen={!!deleteTargetId}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={() => {
+          if (deleteTargetId) {
+            deleteMutation.mutate(deleteTargetId);
+            setDeleteTargetId(null);
+          }
+        }}
+        title="Delete Entry"
+        message="Are you sure you want to delete this time entry? This cannot be undone."
+        confirmLabel="Delete"
+        isLoading={deleteMutation.isPending}
+      />
 
       {/* Entry Modal */}
       <Modal

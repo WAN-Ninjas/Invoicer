@@ -6,6 +6,7 @@ import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
+import DOMPurify from 'dompurify';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -378,14 +379,15 @@ export function TemplateEditor({ templateType }: TemplateEditorProps) {
             <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
               {templateType === 'invoice_pdf' ? (
                 <iframe
-                  srcDoc={previewHtml}
+                  srcDoc={DOMPurify.sanitize(previewHtml)}
                   className="w-full h-[600px] border rounded"
                   title="PDF Preview"
+                  sandbox="allow-same-origin"
                 />
               ) : (
                 <div
                   className="prose dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml) }}
                 />
               )}
             </div>

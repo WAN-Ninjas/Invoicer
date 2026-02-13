@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import { env } from './config/env.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -12,6 +14,26 @@ const __dirname = dirname(__filename);
 
 export function createApp() {
   const app = express();
+
+  // Trust first proxy (nginx) for correct client IPs and secure cookies
+  app.set('trust proxy', 1);
+
+  // Security headers
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'blob:'],
+          fontSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+    })
+  );
 
   // CORS configuration
   app.use(
@@ -28,9 +50,15 @@ export function createApp() {
   // Session configuration
   // Note: secure: false allows HTTP cookies for self-hosted deployments without HTTPS
   // For production with HTTPS, set COOKIE_SECURE=true in environment
+  const PgStore = connectPgSimple(session);
   const cookieSecure = process.env.COOKIE_SECURE === 'true';
   app.use(
     session({
+      store: new PgStore({
+        conString: env.databaseUrl,
+        createTableIfMissing: true,
+      }),
+      name: 'sid',
       secret: env.sessionSecret,
       resave: false,
       saveUninitialized: false,

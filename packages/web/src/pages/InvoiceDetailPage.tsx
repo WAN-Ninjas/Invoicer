@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router';
-import { ArrowLeft, Download, Send, Check, X, RotateCcw, Bell } from 'lucide-react';
+import { ArrowLeft, Download, Send, Check, X, RotateCcw, Bell, Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
-import { invoicesApi } from '@/services/api';
+import { invoicesApi, entriesApi } from '@/services/api';
 import { formatCurrency, formatDate, formatDuration, getEffectiveRate, calculateCost } from '@invoicer/shared';
-import type { InvoiceWithDetails, InvoiceStatus } from '@invoicer/shared';
+import type { InvoiceWithDetails, InvoiceStatus, TimesheetEntry } from '@invoicer/shared';
 
 export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,8 @@ export function InvoiceDetailPage() {
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
   const [reminderEmail, setReminderEmail] = useState('');
   const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; action: () => void } | null>(null);
+  const [editingEntry, setEditingEntry] = useState<TimesheetEntry | null>(null);
+  const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
 
   const { data: invoice, isLoading } = useQuery<InvoiceWithDetails>({
     queryKey: ['invoice', id],
@@ -70,6 +73,36 @@ export function InvoiceDetailPage() {
     onError: () => toast.error('Failed to send reminder'),
   });
 
+  const removeEntryMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      return invoicesApi.removeEntry(id!, entryId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('Entry removed from invoice');
+    },
+    onError: () => toast.error('Failed to remove entry'),
+  });
+
+  const updateEntryMutation = useMutation({
+    mutationFn: async ({ entryId, data }: { entryId: string; data: Record<string, unknown> }) => {
+      await entriesApi.update(entryId, data);
+      return invoicesApi.recalculate(id!);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setEditingEntry(null);
+      toast.success('Entry updated');
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.error('Failed to update entry');
+    },
+  });
+
   const downloadPdf = async () => {
     if (!invoice) return;
     try {
@@ -94,6 +127,30 @@ export function InvoiceDetailPage() {
 
   const handleReminder = () => {
     reminderMutation.mutate(reminderEmail || undefined);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingEntry) return;
+    const formData = new FormData(e.currentTarget);
+
+    const hours = parseInt(formData.get('hours') as string) || 0;
+    const minutes = parseInt(formData.get('minutes') as string) || 0;
+    const totalMinutes = hours * 60 + minutes;
+
+    const data = {
+      entryDate: formData.get('entryDate') as string,
+      startTime: (formData.get('startTime') as string) || undefined,
+      endTime: (formData.get('endTime') as string) || undefined,
+      totalMinutes,
+      taskDescription: formData.get('taskDescription') as string,
+      requestor: (formData.get('requestor') as string) || undefined,
+      hourlyRateOverride: formData.get('hourlyRateOverride')
+        ? parseFloat(formData.get('hourlyRateOverride') as string)
+        : undefined,
+    };
+
+    updateEntryMutation.mutate({ entryId: editingEntry.id, data });
   };
 
   if (isLoading) {
@@ -168,6 +225,9 @@ export function InvoiceDetailPage() {
                     <TableHead>Duration</TableHead>
                     <TableHead>Rate</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    {invoice.status === 'draft' && (
+                      <TableHead className="text-right">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -192,6 +252,28 @@ export function InvoiceDetailPage() {
                         <TableCell className="text-right font-medium">
                           {formatCurrency(amount)}
                         </TableCell>
+                        {invoice.status === 'draft' && (
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingEntry(entry)}
+                                aria-label="Edit entry"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setRemoveEntryId(entry.id)}
+                                aria-label="Remove entry"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
@@ -414,6 +496,113 @@ export function InvoiceDetailPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Remove Entry Confirm */}
+      <ConfirmDialog
+        isOpen={!!removeEntryId}
+        onClose={() => setRemoveEntryId(null)}
+        onConfirm={() => {
+          if (removeEntryId) {
+            removeEntryMutation.mutate(removeEntryId);
+            setRemoveEntryId(null);
+          }
+        }}
+        title="Remove Entry"
+        message="Remove this entry from the invoice? The entry will become unbilled."
+        confirmLabel="Remove"
+        isLoading={removeEntryMutation.isPending}
+      />
+
+      {/* Edit Entry Modal */}
+      <Modal
+        isOpen={!!editingEntry}
+        onClose={() => setEditingEntry(null)}
+        title="Edit Entry"
+        size="lg"
+      >
+        {editingEntry && (
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <Input
+              label="Date"
+              name="entryDate"
+              type="date"
+              required
+              defaultValue={
+                new Date(editingEntry.entryDate).toISOString().split('T')[0]
+              }
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Start Time"
+                name="startTime"
+                type="time"
+                defaultValue={editingEntry.startTime || ''}
+              />
+              <Input
+                label="End Time"
+                name="endTime"
+                type="time"
+                defaultValue={editingEntry.endTime || ''}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Hours"
+                name="hours"
+                type="number"
+                min="0"
+                defaultValue={Math.floor(editingEntry.totalMinutes / 60)}
+              />
+              <Input
+                label="Minutes"
+                name="minutes"
+                type="number"
+                min="0"
+                max="59"
+                defaultValue={editingEntry.totalMinutes % 60}
+              />
+            </div>
+
+            <Textarea
+              label="Task Description"
+              name="taskDescription"
+              required
+              defaultValue={editingEntry.taskDescription}
+            />
+
+            <Input
+              label="Requestor"
+              name="requestor"
+              defaultValue={editingEntry.requestor || ''}
+            />
+
+            <Input
+              label="Rate Override (optional)"
+              name="hourlyRateOverride"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Leave empty to use customer default"
+              defaultValue={editingEntry.hourlyRateOverride ?? ''}
+            />
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setEditingEntry(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={updateEntryMutation.isPending}
+              >
+                Update
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* Reminder Modal */}

@@ -96,7 +96,11 @@ export function InvoiceDetailPage() {
       setEditingEntry(null);
       toast.success('Entry updated');
     },
-    onError: () => toast.error('Failed to update entry'),
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.error('Failed to update entry');
+    },
   });
 
   const downloadPdf = async () => {
@@ -255,6 +259,7 @@ export function InvoiceDetailPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setEditingEntry(entry)}
+                                aria-label="Edit entry"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </Button>
@@ -262,6 +267,7 @@ export function InvoiceDetailPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setRemoveEntryId(entry.id)}
+                                aria-label="Remove entry"
                               >
                                 <Trash2 className="w-4 h-4 text-red-500" />
                               </Button>
@@ -580,7 +586,7 @@ export function InvoiceDetailPage() {
               step="0.01"
               min="0"
               placeholder="Leave empty to use customer default"
-              defaultValue={editingEntry.hourlyRateOverride || ''}
+              defaultValue={editingEntry.hourlyRateOverride ?? ''}
             />
 
             <div className="flex justify-end gap-3 pt-4">

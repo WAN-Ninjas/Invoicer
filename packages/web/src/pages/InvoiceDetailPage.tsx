@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, Link } from 'react-router';
+import { useParams, useNavigate, Link } from 'react-router';
 import { ArrowLeft, Download, Send, Check, X, RotateCcw, Bell, Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Header } from '@/components/layout/Header';
@@ -18,6 +18,7 @@ import type { InvoiceWithDetails, InvoiceStatus, TimesheetEntry } from '@invoice
 
 export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [sendEmail, setSendEmail] = useState('');
@@ -101,6 +102,18 @@ export function InvoiceDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast.error('Failed to update entry');
     },
+  });
+
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async () => {
+      return invoicesApi.delete(id!);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('Invoice deleted — entries returned to unbilled');
+      navigate('/invoices');
+    },
+    onError: () => toast.error('Failed to delete invoice'),
   });
 
   const downloadPdf = async () => {
@@ -432,6 +445,20 @@ export function InvoiceDetailPage() {
                   Cancel Invoice
                 </Button>
               )}
+              {invoice.status === 'draft' && (
+                <Button
+                  variant="danger"
+                  className="w-full"
+                  onClick={() => setConfirmAction({
+                    title: 'Delete Invoice',
+                    message: 'Delete this invoice and return all entries to unbilled? This cannot be undone.',
+                    action: () => deleteInvoiceMutation.mutate(),
+                  })}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Invoice
+                </Button>
+              )}
               {invoice.status === 'cancelled' && (
                 <Button
                   variant="secondary"
@@ -462,7 +489,7 @@ export function InvoiceDetailPage() {
         title={confirmAction?.title || ''}
         message={confirmAction?.message || ''}
         confirmLabel="Confirm"
-        isLoading={updateStatusMutation.isPending}
+        isLoading={updateStatusMutation.isPending || deleteInvoiceMutation.isPending}
       />
 
       {/* Send Modal */}

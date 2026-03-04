@@ -305,21 +305,44 @@ export async function updateInvoice(
     total = Math.round((subtotal + taxAmount) * 100) / 100;
   }
 
-  await prisma.invoice.update({
-    where: { id },
-    data: {
-      hourlyRateOverride: input.hourlyRateOverride,
-      taxRate: input.taxRate,
-      notes: input.notes,
-      dueDate: input.dueDate ? new Date(input.dueDate) : input.dueDate,
-      status: input.status,
-      sentAt: input.status === 'sent' ? new Date() : undefined,
-      paidAt: input.status === 'paid' ? new Date() : undefined,
-      subtotal,
-      taxAmount,
-      total,
-    },
-  });
+  // When cancelling, unlink entries and charges so they return to unbilled
+  if (input.status === 'cancelled') {
+    await prisma.$transaction(async (tx) => {
+      await tx.timesheetEntry.updateMany({
+        where: { invoiceId: id },
+        data: { invoiceId: null },
+      });
+      await tx.charge.updateMany({
+        where: { invoiceId: id },
+        data: { invoiceId: null },
+      });
+      await tx.invoice.update({
+        where: { id },
+        data: {
+          status: 'cancelled',
+          subtotal: 0,
+          taxAmount: 0,
+          total: 0,
+        },
+      });
+    });
+  } else {
+    await prisma.invoice.update({
+      where: { id },
+      data: {
+        hourlyRateOverride: input.hourlyRateOverride,
+        taxRate: input.taxRate,
+        notes: input.notes,
+        dueDate: input.dueDate ? new Date(input.dueDate) : input.dueDate,
+        status: input.status,
+        sentAt: input.status === 'sent' ? new Date() : undefined,
+        paidAt: input.status === 'paid' ? new Date() : undefined,
+        subtotal,
+        taxAmount,
+        total,
+      },
+    });
+  }
 
   const result = await getInvoiceWithDetails(id);
   if (!result) {

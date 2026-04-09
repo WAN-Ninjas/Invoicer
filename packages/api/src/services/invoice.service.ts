@@ -165,7 +165,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceW
   }
 
   // Get charges (if any)
-  const chargeIds = (input as { chargeIds?: string[] }).chargeIds || [];
+  const chargeIds = input.chargeIds || [];
   const charges = chargeIds.length > 0 ? await prisma.charge.findMany({
     where: {
       id: { in: chargeIds },

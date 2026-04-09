@@ -4,12 +4,16 @@ export const invoiceStatusSchema = z.enum(['draft', 'sent', 'paid', 'overdue', '
 
 export const createInvoiceSchema = z.object({
   customerId: z.string().uuid(),
-  entryIds: z.array(z.string().uuid()).min(1, 'At least one entry is required'),
+  entryIds: z.array(z.string().uuid()).optional().default([]),
+  chargeIds: z.array(z.string().uuid()).optional().default([]),
   hourlyRateOverride: z.number().min(0).optional(),
   taxRate: z.number().min(0).max(1).optional(),
   notes: z.string().max(5000).optional(),
   dueDate: z.string().or(z.date()).optional(),
-});
+}).refine(
+  (data) => data.entryIds.length > 0 || data.chargeIds.length > 0,
+  { message: 'At least one entry or charge is required' },
+);
 
 export const updateInvoiceSchema = z.object({
   hourlyRateOverride: z.number().min(0).nullable().optional(),

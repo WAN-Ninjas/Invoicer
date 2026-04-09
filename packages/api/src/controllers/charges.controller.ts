@@ -22,9 +22,10 @@ export const createCharge = asyncHandler(async (req: Request, res: Response) => 
 
 export const updateCharge = asyncHandler(async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const { chargeType, description, quantity, unitPrice, chargeDate, notes } = req.body;
+  const { customerId, chargeType, description, quantity, unitPrice, chargeDate, notes } = req.body;
 
   const charge = await chargeService.updateCharge(id, {
+    customerId,
     chargeType: chargeType as ChargeType | undefined,
     description,
     quantity: quantity !== undefined ? parseFloat(quantity) : undefined,

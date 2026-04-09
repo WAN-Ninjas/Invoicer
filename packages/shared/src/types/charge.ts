@@ -27,6 +27,7 @@ export interface CreateChargeInput {
 }
 
 export interface UpdateChargeInput {
+  customerId?: string;
   chargeType?: ChargeType;
   description?: string;
   quantity?: number;

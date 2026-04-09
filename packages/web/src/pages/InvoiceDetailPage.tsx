@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { invoicesApi, entriesApi } from '@/services/api';
-import { formatCurrency, formatDate, formatDuration, getEffectiveRate, calculateCost } from '@invoicer/shared';
+import { formatCurrency, formatDate, formatDuration, getEffectiveRate, calculateCost, CHARGE_TYPE_LABELS } from '@invoicer/shared';
 import type { InvoiceWithDetails, InvoiceStatus, TimesheetEntry } from '@invoicer/shared';
 
 export function InvoiceDetailPage() {
@@ -290,6 +290,43 @@ export function InvoiceDetailPage() {
                       </TableRow>
                     );
                   })}
+                  {invoice.charges && invoice.charges.length > 0 && (
+                    <>
+                      {invoice.entries.length > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={invoice.status === 'draft' ? 6 : 5} className="py-2">
+                            <div className="border-t border-gray-200 dark:border-gray-700" />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {invoice.charges.map((charge) => (
+                        <TableRow key={charge.id}>
+                          <TableCell>{formatDate(charge.chargeDate)}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{charge.description}</p>
+                              <p className="text-xs text-gray-500">
+                                {CHARGE_TYPE_LABELS[charge.chargeType] || charge.chargeType}
+                                {charge.quantity > 1 && ` — ${charge.quantity} × ${formatCurrency(charge.unitPrice)}`}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>—</TableCell>
+                          <TableCell>
+                            {charge.quantity > 1
+                              ? `${charge.quantity} × ${formatCurrency(charge.unitPrice)}`
+                              : '—'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatCurrency(charge.total)}
+                          </TableCell>
+                          {invoice.status === 'draft' && (
+                            <TableCell />
+                          )}
+                        </TableRow>
+                      ))}
+                    </>
+                  )}
                 </TableBody>
               </Table>
 

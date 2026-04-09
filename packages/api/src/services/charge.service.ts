@@ -2,6 +2,19 @@ import { prisma } from '../config/database.js';
 import { Prisma } from '../generated/prisma/client.js';
 import type { ChargeType } from '../generated/prisma/client.js';
 
+type Decimal = Prisma.Decimal;
+
+function mapCharge<T extends { quantity: Decimal; unitPrice: Decimal; total: Decimal }>(
+  charge: T,
+): Omit<T, 'quantity' | 'unitPrice' | 'total'> & { quantity: number; unitPrice: number; total: number } {
+  return {
+    ...charge,
+    quantity: charge.quantity.toNumber(),
+    unitPrice: charge.unitPrice.toNumber(),
+    total: charge.total.toNumber(),
+  };
+}
+
 export interface CreateChargeInput {
   customerId: string;
   chargeType: ChargeType;
@@ -26,7 +39,7 @@ export async function createCharge(data: CreateChargeInput) {
   const quantity = data.quantity ?? 1;
   const total = quantity * data.unitPrice;
 
-  return prisma.charge.create({
+  const charge = await prisma.charge.create({
     data: {
       customerId: data.customerId,
       chargeType: data.chargeType,
@@ -42,6 +55,7 @@ export async function createCharge(data: CreateChargeInput) {
       customer: true,
     },
   });
+  return mapCharge(charge);
 }
 
 export async function updateCharge(id: string, data: UpdateChargeInput) {
@@ -54,7 +68,7 @@ export async function updateCharge(id: string, data: UpdateChargeInput) {
   const unitPrice = data.unitPrice ?? Number(existing.unitPrice);
   const total = quantity * unitPrice;
 
-  return prisma.charge.update({
+  const charge = await prisma.charge.update({
     where: { id },
     data: {
       ...data,
@@ -66,6 +80,7 @@ export async function updateCharge(id: string, data: UpdateChargeInput) {
       customer: true,
     },
   });
+  return mapCharge(charge);
 }
 
 export async function deleteCharge(id: string) {
@@ -73,17 +88,18 @@ export async function deleteCharge(id: string) {
 }
 
 export async function getChargeById(id: string) {
-  return prisma.charge.findUnique({
+  const charge = await prisma.charge.findUnique({
     where: { id },
     include: {
       customer: true,
       invoice: true,
     },
   });
+  return charge ? mapCharge(charge) : null;
 }
 
 export async function getChargesByCustomer(customerId: string, unbilledOnly = false) {
-  return prisma.charge.findMany({
+  const charges = await prisma.charge.findMany({
     where: {
       customerId,
       ...(unbilledOnly ? { invoiceId: null } : {}),
@@ -93,10 +109,11 @@ export async function getChargesByCustomer(customerId: string, unbilledOnly = fa
     },
     orderBy: { chargeDate: 'desc' },
   });
+  return charges.map(mapCharge);
 }
 
 export async function getUnbilledCharges(customerId?: string) {
-  return prisma.charge.findMany({
+  const charges = await prisma.charge.findMany({
     where: {
       invoiceId: null,
       ...(customerId ? { customerId } : {}),
@@ -109,6 +126,7 @@ export async function getUnbilledCharges(customerId?: string) {
       { chargeDate: 'desc' },
     ],
   });
+  return charges.map(mapCharge);
 }
 
 export async function assignChargesToInvoice(chargeIds: string[], invoiceId: string) {
@@ -153,7 +171,7 @@ export async function getAllCharges(options?: {
     where.invoiceId = null;
   }
 
-  return prisma.charge.findMany({
+  const charges = await prisma.charge.findMany({
     where,
     include: {
       customer: true,
@@ -161,4 +179,5 @@ export async function getAllCharges(options?: {
     },
     orderBy: { chargeDate: 'desc' },
   });
+  return charges.map(mapCharge);
 }

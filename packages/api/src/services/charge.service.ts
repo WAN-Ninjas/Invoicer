@@ -27,6 +27,7 @@ export interface CreateChargeInput {
 }
 
 export interface UpdateChargeInput {
+  customerId?: string;
   chargeType?: ChargeType;
   description?: string;
   quantity?: number;
@@ -62,6 +63,10 @@ export async function updateCharge(id: string, data: UpdateChargeInput) {
   const existing = await prisma.charge.findUnique({ where: { id } });
   if (!existing) {
     throw new Error('Charge not found');
+  }
+
+  if (data.customerId && existing.invoiceId) {
+    throw new Error('Cannot change customer on a charge that is already on an invoice');
   }
 
   const quantity = data.quantity ?? Number(existing.quantity);

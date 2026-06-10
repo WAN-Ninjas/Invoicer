@@ -233,6 +233,8 @@ const DEFAULT_TEMPLATES: Record<TemplateType, { name: string; subject: string | 
     }
 
     .line-items .description {
+      overflow: visible;
+      text-overflow: clip;
       overflow-wrap: anywhere;
       word-break: break-word;
       white-space: normal;
@@ -595,7 +597,36 @@ export function buildLineItemsHtml(
     return `${hours}h ${mins}m`;
   };
 
-  let html = `<table class="line-items" style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+  const descriptionStyle = [
+    'overflow: visible !important',
+    'text-overflow: clip !important',
+    'white-space: normal !important',
+    'overflow-wrap: anywhere !important',
+    'word-break: break-word !important',
+    'max-width: none !important',
+    'height: auto !important',
+    'vertical-align: top',
+  ].join('; ');
+
+  let html = `<style>
+    .line-items {
+      width: 100% !important;
+      table-layout: fixed !important;
+      border-collapse: collapse !important;
+    }
+
+    .line-items .description {
+      overflow: visible !important;
+      text-overflow: clip !important;
+      white-space: normal !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
+      max-width: none !important;
+      height: auto !important;
+      vertical-align: top !important;
+    }
+  </style>
+  <table class="line-items" style="width: 100%; table-layout: fixed; border-collapse: collapse;">
     <colgroup>
       <col style="width: 13%;">
       <col style="width: 57%;">
@@ -617,7 +648,7 @@ export function buildLineItemsHtml(
     html += `
       <tr>
         <td>${formatShortDate(entry.entryDate)}</td>
-        <td class="description" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">${desc}</td>
+        <td class="description" style="${descriptionStyle}">${desc}</td>
         <td class="qty">${formatDuration(entry.totalMinutes)}</td>
         <td class="amount">${formatCurrency(toNum(entry.calculatedCost))}</td>
       </tr>`;
@@ -629,7 +660,7 @@ export function buildLineItemsHtml(
     html += `
       <tr>
         <td>${formatShortDate(charge.chargeDate)}</td>
-        <td class="description" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">${desc}</td>
+        <td class="description" style="${descriptionStyle}">${desc}</td>
         <td class="qty">${qty === 1 ? '1' : qty}</td>
         <td class="amount">${formatCurrency(toNum(charge.total))}</td>
       </tr>`;

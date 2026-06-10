@@ -198,6 +198,7 @@ const DEFAULT_TEMPLATES: Record<TemplateType, { name: string; subject: string | 
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 30px;
+      table-layout: fixed;
     }
 
     .line-items th {
@@ -219,6 +220,7 @@ const DEFAULT_TEMPLATES: Record<TemplateType, { name: string; subject: string | 
       padding: 10px;
       border-bottom: 1px solid #30363d;
       font-size: 9px;
+      vertical-align: top;
     }
 
     .line-items tr:nth-child(even) td {
@@ -228,6 +230,12 @@ const DEFAULT_TEMPLATES: Record<TemplateType, { name: string; subject: string | 
     .line-items td:nth-child(3),
     .line-items td:nth-child(4) {
       text-align: right;
+    }
+
+    .line-items .description {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: normal;
     }
 
     .line-items .amount {
@@ -587,7 +595,13 @@ export function buildLineItemsHtml(
     return `${hours}h ${mins}m`;
   };
 
-  let html = `<table class="line-items">
+  let html = `<table class="line-items" style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+    <colgroup>
+      <col style="width: 13%;">
+      <col style="width: 57%;">
+      <col style="width: 13%;">
+      <col style="width: 17%;">
+    </colgroup>
     <thead>
       <tr>
         <th>Date</th>
@@ -599,29 +613,23 @@ export function buildLineItemsHtml(
     <tbody>`;
 
   for (const entry of entries) {
-    const rawDesc = entry.taskDescription.length > 55
-      ? entry.taskDescription.substring(0, 52) + '...'
-      : entry.taskDescription;
-    const desc = escapeHtml(rawDesc);
+    const desc = escapeHtml(entry.taskDescription);
     html += `
       <tr>
         <td>${formatShortDate(entry.entryDate)}</td>
-        <td>${desc}</td>
+        <td class="description" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">${desc}</td>
         <td class="qty">${formatDuration(entry.totalMinutes)}</td>
         <td class="amount">${formatCurrency(toNum(entry.calculatedCost))}</td>
       </tr>`;
   }
 
   for (const charge of charges) {
-    const rawDesc = charge.description.length > 55
-      ? charge.description.substring(0, 52) + '...'
-      : charge.description;
-    const desc = escapeHtml(rawDesc);
+    const desc = escapeHtml(charge.description);
     const qty = toNum(charge.quantity);
     html += `
       <tr>
         <td>${formatShortDate(charge.chargeDate)}</td>
-        <td>${desc}</td>
+        <td class="description" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">${desc}</td>
         <td class="qty">${qty === 1 ? '1' : qty}</td>
         <td class="amount">${formatCurrency(toNum(charge.total))}</td>
       </tr>`;

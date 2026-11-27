@@ -22,18 +22,19 @@
     "typecheck": "npm run build:shared && npm run db:generate && tsc --noEmit -p packages/shared/tsconfig.json && tsc --noEmit -p packages/api/tsconfig.json && tsc --noEmit -p packages/web/tsconfig.json"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.2.3",
     "concurrently": "^9.0.0",
-    "eslint": "^9.0.0",
+    "eslint": "^10.16.0",
     "typescript": "^5.8.0",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.71.2"
   },
   "overrides": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "effect": "^3.22.5"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^22.22.0 || >=24.11.0"
   }
 }

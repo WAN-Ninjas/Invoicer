@@ -122,7 +122,7 @@ docker exec invoicer-api npx prisma generate
 
 ### Local Development
 
-Requires Node.js >= 20 and a running PostgreSQL instance.
+Requires Node.js 22.22+ or 24.11+ (LTS) and a running PostgreSQL instance.
 
 ```bash
 # Install dependencies

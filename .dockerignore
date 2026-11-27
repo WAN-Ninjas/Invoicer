@@ -1,7 +1,9 @@
-node_modules
+**/node_modules
 .git
 .github
 *.md
 .env*
-dist
+**/dist
+packages/api/src/generated
+packages/api/uploads
 scripts

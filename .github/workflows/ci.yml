@@ -13,8 +13,6 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
-  security-events: write
 
 jobs:
   check:
@@ -23,20 +21,25 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - run: npm ci
-      - run: npm run build --workspace=packages/shared
-      - run: npm run db:generate
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: true
       - run: npm run typecheck
-      - run: npm run lint
+      - run: npm run lint -- --max-warnings 0
+      - run: npm run build
+      - run: npm audit --audit-level=high
 
   build-api:
     needs: check
-    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -45,6 +48,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v4
+        if: github.event_name == 'push'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -62,30 +66,47 @@ jobs:
         with:
           context: .
           file: docker/api.Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          pull: true
+          load: true
+          tags: invoicer-api:ci
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
-      - uses: aquasecurity/trivy-action@master
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ghcr.io/wan-ninjas/invoicer-api:latest
+          image-ref: invoicer-api:ci
           format: sarif
           output: trivy-api.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: 0
+          exit-code: 1
+          scanners: vuln
+          version: v0.76.2
+          limit-severities-for-sarif: true
 
       - uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && github.event_name == 'push' && hashFiles('trivy-api.sarif') != ''
         with:
           sarif_file: trivy-api.sarif
           category: trivy-api
 
+      - name: Publish scanned image
+        if: github.event_name == 'push'
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          while IFS= read -r tag; do
+            docker tag invoicer-api:ci "$tag"
+            docker push "$tag"
+          done <<< "$IMAGE_TAGS"
+
   build-web:
     needs: check
-    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -94,6 +115,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v4
+        if: github.event_name == 'push'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -111,23 +133,37 @@ jobs:
         with:
           context: .
           file: docker/web.Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          pull: true
+          load: true
+          tags: invoicer-web:ci
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
-      - uses: aquasecurity/trivy-action@master
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ghcr.io/wan-ninjas/invoicer-web:latest
+          image-ref: invoicer-web:ci
           format: sarif
           output: trivy-web.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: 0
+          exit-code: 1
+          scanners: vuln
+          version: v0.76.2
+          limit-severities-for-sarif: true
 
       - uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && github.event_name == 'push' && hashFiles('trivy-web.sarif') != ''
         with:
           sarif_file: trivy-web.sarif
           category: trivy-web
+
+      - name: Publish scanned image
+        if: github.event_name == 'push'
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          while IFS= read -r tag; do
+            docker tag invoicer-web:ci "$tag"
+            docker push "$tag"
+          done <<< "$IMAGE_TAGS"

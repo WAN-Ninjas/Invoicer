@@ -1,81 +1,49 @@
-FROM node:20-slim AS builder
+FROM node:24-bookworm-slim AS base
 
-# Install OpenSSL for Prisma
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy package files
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 COPY package*.json ./
-COPY packages/api/package*.json ./packages/api/
-COPY packages/shared/package*.json ./packages/shared/
+COPY packages/api/package.json ./packages/api/
+COPY packages/shared/package.json ./packages/shared/
 
-# Install dependencies
-RUN npm ci
+FROM base AS builder
 
-# Copy source code
+RUN npm ci --workspace=packages/api --workspace=packages/shared --include-workspace-root
+
 COPY packages/shared ./packages/shared
 COPY packages/api ./packages/api
 COPY tsconfig.base.json ./
 
-# Build shared package
-RUN npm run build --workspace=packages/shared
+RUN npm run build:shared && npm run db:generate && npm run build:api
 
-# Generate Prisma client (Prisma 7 uses prisma.config.ts for config)
-RUN cd packages/api && npx prisma generate
+FROM base AS runner
 
-# Build API
-RUN npm run build --workspace=packages/api
-
-# Production stage
-FROM node:20-slim AS runner
-
-# Install dependencies for Puppeteer/Chrome
-RUN apt-get update && apt-get install -y \
-    openssl \
-    chromium \
-    fonts-liberation \
-    libnss3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    libpango-1.0-0 \
-    libcairo2 \
-    --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends chromium fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
-# Set Puppeteer to use system Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV NODE_ENV=production
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-WORKDIR /app
+RUN npm ci --omit=dev --workspace=packages/api --workspace=packages/shared \
+    && rm -rf /root/.npm /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
-# Copy built files
-COPY --from=builder /app/packages/api/dist ./dist
-COPY --from=builder /app/packages/api/src/generated ./dist/generated
-COPY --from=builder /app/packages/api/package*.json ./
-COPY --from=builder /app/packages/api/prisma ./prisma
-COPY --from=builder /app/packages/api/prisma.config.ts ./prisma.config.ts
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/shared/dist ./node_modules/@invoicer/shared/dist
-COPY --from=builder /app/packages/shared/package.json ./node_modules/@invoicer/shared/
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/api/dist ./packages/api/dist
+COPY --from=builder /app/packages/api/prisma ./packages/api/prisma
+COPY --from=builder /app/packages/api/prisma.config.ts ./packages/api/prisma.config.ts
 
-# Remove npm and its vulnerable dependencies from production image
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+WORKDIR /app/packages/api
 
-# Create uploads directory and set ownership
-RUN mkdir -p uploads/logos && chown -R node:node /app
+RUN mkdir -p /app/uploads/logos && chown -R node:node /app/uploads \
+    && ln -s /app/uploads uploads
 
 USER node
 
 EXPOSE 3000
 
-# Run migrations using prisma directly from node_modules, then start
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "/app/node_modules/.bin/prisma migrate deploy && exec node dist/index.js"]

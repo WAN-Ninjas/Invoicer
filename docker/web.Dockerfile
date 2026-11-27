@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY packages/web/package*.json ./packages/web/
 COPY packages/shared/package*.json ./packages/shared/
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --workspace=packages/web --workspace=packages/shared --include-workspace-root
 
 # Copy source code
 COPY packages/shared ./packages/shared
@@ -24,7 +24,7 @@ RUN npm run build --workspace=packages/web
 # Production stage with nginx
 FROM nginx:alpine
 
-RUN apk add --no-cache curl
+RUN apk upgrade --no-cache && apk add --no-cache curl
 
 # Copy built files
 COPY --from=builder /app/packages/web/dist /usr/share/nginx/html

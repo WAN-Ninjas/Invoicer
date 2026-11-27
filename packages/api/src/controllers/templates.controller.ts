@@ -54,11 +54,10 @@ export async function update(req: Request, res: Response): Promise<void> {
   };
 
   // Ensure template exists (create from default if not)
-  let template = await templateService.getTemplate(type);
-  if (!template) {
+  if (!(await templateService.getTemplate(type))) {
     const defaultTemplate = templateService.getDefaultTemplate(type);
     const { prisma } = await import('../config/database.js');
-    template = await prisma.template.create({
+    await prisma.template.create({
       data: {
         type,
         name: defaultTemplate.name,

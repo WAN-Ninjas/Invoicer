@@ -74,7 +74,8 @@ export async function generateInvoicePdf(invoiceId: string): Promise<Buffer> {
   let page;
   try {
     page = await browser.newPage();
-    await page.setContent(processedHtml, { waitUntil: 'networkidle0' });
+    await page.setContent(processedHtml);
+    await page.waitForNetworkIdle();
 
     const pdf = await page.pdf({
       format: 'Letter',

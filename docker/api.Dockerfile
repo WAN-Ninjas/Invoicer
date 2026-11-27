@@ -1,7 +1,6 @@
-FROM node:24-bookworm-slim AS base
+FROM node:24-alpine AS base
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends openssl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache && apk add --no-cache openssl
 
 WORKDIR /app
 
@@ -23,8 +22,7 @@ RUN npm run build:shared && npm run db:generate && npm run build:api
 
 FROM base AS runner
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends chromium fonts-liberation \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache chromium font-liberation
 
 ENV NODE_ENV=production
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium

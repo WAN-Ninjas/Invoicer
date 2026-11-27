@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import * as chargesController from '../controllers/charges.controller.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+
+router.use(requireAuth);
 
 // Get charge types (for dropdowns)
 router.get('/types', chargesController.getChargeTypes);

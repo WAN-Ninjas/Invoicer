@@ -18,17 +18,22 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
   }
 
+  await new Promise<void>((resolve, reject) => {
+    req.session.regenerate((err) => err ? reject(err) : resolve());
+  });
   req.session.authenticated = true;
+  await new Promise<void>((resolve, reject) => {
+    req.session.save((err) => err ? reject(err) : resolve());
+  });
   res.json({ success: true, message: 'Logged in successfully' });
 }
 
 export async function logout(req: Request, res: Response): Promise<void> {
-  req.session.destroy((err) => {
-    if (err) {
-      throw new AppError(500, 'Failed to logout');
-    }
-    res.json({ success: true, message: 'Logged out successfully' });
+  await new Promise<void>((resolve, reject) => {
+    req.session.destroy((err) => err ? reject(err) : resolve());
   });
+  res.clearCookie('sid');
+  res.json({ success: true, message: 'Logged out successfully' });
 }
 
 export async function checkAuth(req: Request, res: Response): Promise<void> {

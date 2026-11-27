@@ -92,20 +92,18 @@ docker compose build --no-cache && docker compose up -d
 
 ```bash
 # Run database migrations
-docker exec invoicer-api npx prisma migrate deploy
+docker compose exec api /app/node_modules/.bin/prisma migrate deploy
 
 # Check migration status
-docker exec invoicer-api npx prisma migrate status
+docker compose exec api /app/node_modules/.bin/prisma migrate status
 
-# Open Prisma Studio (database GUI) — accessible at http://localhost:5555
-docker exec -it invoicer-api npx prisma studio
-
-# Reset database (WARNING: deletes all data)
-docker exec invoicer-api npx prisma migrate reset
-
-# Generate Prisma client after schema changes
-docker exec invoicer-api npx prisma generate
+# Reset the database (WARNING: deletes all data)
+docker compose exec api /app/node_modules/.bin/prisma migrate reset
 ```
+
+The Docker build generates the Prisma client. For local development, run
+`npm run db:generate` after schema changes and use
+`npm run db:studio --workspace=packages/api` to open Prisma Studio.
 
 ### Backup & Restore
 

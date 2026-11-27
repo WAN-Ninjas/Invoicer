@@ -32,7 +32,7 @@
     "multer": "^2.5.0",
     "nodemailer": "^10.6.1",
     "papaparse": "^5.7.0",
-    "pdfkit": "^0.20.2",
+    "pdfkit": "^0.21.0",
     "puppeteer": "^25.19.0",
     "qs": "^6.14.2",
     "uuid": "^14.0.3",
